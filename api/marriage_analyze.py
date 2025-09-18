@@ -425,110 +425,101 @@ Respond with ONLY valid JSON matching this format."""
     async def analyze_emotional_journey(self, content):
         """Track emotional journey throughout the call"""
 
-        prompt = f"""
-        Map the emotional journey of this prospect throughout the marriage coaching sales call.
+        prompt = f"""Track the prospect's emotional journey in this marriage coaching call:
 
-        TRANSCRIPT:
-        {content}
+TRANSCRIPT: {content}
 
-        Analyze the emotional journey:
-
-        {{
-          "emotional_journey_phases": [
-            {{
-              "phase": "opening|discovery|problem_identification|value_building|objection_handling|closing",
-              "emotional_state": "hopeful|desperate|defensive|angry|resigned|motivated|skeptical|curious",
-              "intensity": 1-10,
-              "trigger_moment": "specific quote or moment that caused this emotion",
-              "rep_response_to_emotion": "how rep handled this emotional state",
-              "rep_response_effectiveness": 1-10,
-              "coaching_note": "how rep should have handled this emotion better"
-            }}
-          ],
-          "emotional_patterns": {{
-            "dominant_emotion": "primary emotion throughout call",
-            "emotional_shifts": ["key moments where emotion changed"],
-            "emotional_resistance_points": ["moments of highest resistance"],
-            "emotional_connection_points": ["moments of highest connection"],
-            "missed_emotional_opportunities": ["emotions rep failed to address"]
-          }},
-          "emotional_coaching_strategy": {{
-            "next_call_emotional_approach": "how to approach emotions in next interaction",
-            "emotional_triggers_to_avoid": ["things that caused negative emotions"],
-            "emotional_bridges_to_build": ["ways to create positive emotional connection"],
-            "emotional_closing_strategy": "how to use emotions for closing"
-          }}
-        }}
-
-        Focus on marriage-specific emotions: desperation about relationship, hope for saving marriage, fear of divorce, anger at situation.
-
-        Respond with ONLY the JSON object.
-        """
+Return JSON:
+{{
+  "emotional_journey_phases": [
+    {{
+      "phase": "opening",
+      "emotional_state": "hopeful",
+      "intensity": 7,
+      "trigger_moment": "quote from call",
+      "coaching_note": "how to handle better"
+    }}
+  ],
+  "emotional_patterns": {{
+    "dominant_emotion": "desperate",
+    "emotional_shifts": ["moment1", "moment2"],
+    "missed_emotional_opportunities": ["opportunity1"]
+  }}
+}}"""
 
         try:
+            logger.info(f"Analyzing emotional journey for content length: {len(content)}")
             response = await self.client.messages.create(
                 model="claude-3-5-sonnet-20241022",
-                max_tokens=2500,
+                max_tokens=1500,
                 messages=[{"role": "user", "content": prompt}]
             )
 
             response_text = response.content[0].text.strip()
+            logger.info(f"Emotional journey raw response: {response_text[:200]}...")
+
             if response_text.startswith('```json'):
                 response_text = response_text.replace('```json', '').replace('```', '').strip()
+            if response_text.startswith('```'):
+                response_text = response_text.replace('```', '').strip()
 
-            return json.loads(response_text)
+            result = json.loads(response_text)
+            logger.info(f"Emotional journey analysis successful")
+            return result
 
         except Exception as e:
             logger.error(f"Emotional journey analysis error: {str(e)}")
+            logger.error(f"Raw response that failed: {response_text if 'response_text' in locals() else 'No response'}")
             return self.get_fallback_emotional_journey()
 
     async def classify_marriage_archetype(self, content):
         """Classify into marriage coaching specific archetypes"""
 
-        prompt = f"""Classify this marriage coaching prospect into 1 of 5 archetypes:
+        prompt = f"""Analyze this marriage coaching call and classify the prospect:
 
-TRANSCRIPT:
-{content}
+TRANSCRIPT: {content}
 
-Archetypes:
-1. ANALYTICAL RESEARCHER - Data-driven, wants success rates
-2. DESPERATE SAVER - High urgency, facing divorce/separation
+Choose the best archetype:
+1. ANALYTICAL RESEARCHER - Wants data/stats
+2. DESPERATE SAVER - High urgency, crisis mode
 3. HOPEFUL BUILDER - Optimistic, growth-focused
 4. SKEPTICAL EVALUATOR - Cautious, worried about scams
-5. CONSENSUS SEEKER - Needs spouse buy-in
+5. CONSENSUS SEEKER - Needs spouse approval
 
+Return JSON:
 {{
   "primary_archetype": "DESPERATE SAVER",
   "confidence_score": 0.8,
   "secondary_archetype": "HOPEFUL BUILDER",
   "archetype_evidence": {{
-    "supporting_quotes": ["We're really struggling", "Need help soon"],
-    "behavioral_indicators": ["High emotion", "Urgency expressed"]
-  }},
-  "archetype_coaching_strategy": {{
-    "optimal_approach": "Create urgency around timeline",
-    "key_motivators": ["Fear of divorce", "Saving family"],
-    "closing_strategy": "Emphasize limited time to save marriage"
+    "supporting_quotes": ["quote1", "quote2"],
+    "behavioral_indicators": ["behavior1", "behavior2"]
   }}
-}}
-
-Respond with ONLY valid JSON matching this format."""
+}}"""
 
         try:
+            logger.info(f"Classifying archetype for content length: {len(content)}")
             response = await self.client.messages.create(
                 model="claude-3-5-sonnet-20241022",
-                max_tokens=3000,
+                max_tokens=1500,
                 messages=[{"role": "user", "content": prompt}]
             )
 
             response_text = response.content[0].text.strip()
+            logger.info(f"Archetype raw response: {response_text[:200]}...")
+
             if response_text.startswith('```json'):
                 response_text = response_text.replace('```json', '').replace('```', '').strip()
+            if response_text.startswith('```'):
+                response_text = response_text.replace('```', '').strip()
 
-            return json.loads(response_text)
+            result = json.loads(response_text)
+            logger.info(f"Archetype classification successful: {result.get('primary_archetype')}")
+            return result
 
         except Exception as e:
             logger.error(f"Archetype classification error: {str(e)}")
+            logger.error(f"Raw response that failed: {response_text if 'response_text' in locals() else 'No response'}")
             return self.get_fallback_archetype()
 
     async def analyze_talk_track_improvements(self, content, sales_framework, marriage_analysis):
