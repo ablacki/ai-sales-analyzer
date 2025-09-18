@@ -71,80 +71,51 @@ class MarriageCoachingAnalyzer:
     async def analyze_sales_framework(self, content):
         """Apply the proven 6-category sales framework"""
 
-        prompt = f"""
-        You are a savage Sales Manager analyzing this marriage coaching sales call using the proven 6-category framework.
+        prompt = f"""Analyze this marriage coaching sales call and rate performance in 6 categories.
 
-        TRANSCRIPT:
-        {content}
+TRANSCRIPT:
+{content}
 
-        Analyze using the Marriage Coaching Sales Framework with surgical precision:
+Rate each category 1-10 and provide brief analysis:
 
-        {{
-          "framework_scores": {{
-            "call_control": {{
-              "score": 1-10,
-              "analysis": "How well did rep maintain control and guide the conversation?",
-              "what_worked": ["specific examples with quotes"],
-              "what_needed_improvement": ["specific areas with quotes"],
-              "coaching_fix": "Specific script/technique for improvement"
-            }},
-            "discovery_depth": {{
-              "score": 1-10,
-              "analysis": "Quality of information gathering about marriage problems",
-              "what_worked": ["good discovery questions asked"],
-              "what_needed_improvement": ["missing discovery areas"],
-              "coaching_fix": "Specific questions to ask next time"
-            }},
-            "empathetic_confrontation": {{
-              "score": 1-10,
-              "analysis": "Balance of empathy while showing prospect his role in problems",
-              "what_worked": ["moments of effective confrontation"],
-              "what_needed_improvement": ["missed confrontation opportunities"],
-              "coaching_fix": "Scripts for empathetic confrontation"
-            }},
-            "objection_handling": {{
-              "score": 1-10,
-              "analysis": "Effectiveness handling money and relationship objections",
-              "objections_encountered": [{{ "objection": "quote", "response": "rep response", "effectiveness": 1-10 }}],
-              "what_worked": ["effective responses"],
-              "what_needed_improvement": ["poor responses"],
-              "coaching_fix": "Better objection handling scripts"
-            }},
-            "value_positioning": {{
-              "score": 1-10,
-              "analysis": "How well positioned marriage value vs program cost",
-              "marriage_vs_cost_effectiveness": {{
-                "marriage_value_examples": ["quotes showing marriage positioned as valuable"],
-                "cost_justification_examples": ["quotes showing cost as investment not expense"],
-                "tesla_analogy_usage": {{ "used": true/false, "effectiveness": 1-10, "quote": "actual usage" }},
-                "beg_borrow_steal_positioning": {{ "used": true/false, "effectiveness": 1-10, "quote": "actual usage" }},
-                "divorce_cost_comparison": {{ "mentioned": true/false, "effectiveness": 1-10 }},
-                "future_happiness_value": {{ "positioned": true/false, "effectiveness": 1-10 }}
-              }},
-              "price_objection_handling": {{
-                "objections_encountered": [{{ "objection": "specific price concern", "response": "rep response", "effectiveness": 1-10 }}],
-                "missed_reframes": ["opportunities to reframe price as investment"]
-              }},
-              "what_worked": ["effective value positioning moments"],
-              "what_needed_improvement": ["missed value opportunities with specific quotes"],
-              "coaching_fix": "Specific value positioning scripts and reframes"
-            }},
-            "closing_strength": {{
-              "score": 1-10,
-              "analysis": "Effectiveness of asking for commitment",
-              "what_worked": ["strong closing moments"],
-              "what_needed_improvement": ["weak closing attempts"],
-              "coaching_fix": "Better closing techniques"
-            }}
-          }},
-          "total_score": "sum of all 6 scores out of 60",
-          "overall_grade": "A|B|C|D|F based on total score"
-        }}
+{{
+  "framework_scores": {{
+    "call_control": {{
+      "score": 7,
+      "analysis": "Rep maintained good conversation flow",
+      "coaching_fix": "Ask more guiding questions"
+    }},
+    "discovery_depth": {{
+      "score": 5,
+      "analysis": "Surface-level problem identification",
+      "coaching_fix": "Dig deeper into marriage pain points"
+    }},
+    "empathetic_confrontation": {{
+      "score": 6,
+      "analysis": "Showed empathy but missed confrontation opportunities",
+      "coaching_fix": "Balance understanding with accountability"
+    }},
+    "objection_handling": {{
+      "score": 4,
+      "analysis": "Struggled with price objections",
+      "coaching_fix": "Use investment reframes not cost justification"
+    }},
+    "value_positioning": {{
+      "score": 3,
+      "analysis": "Weak marriage value positioning",
+      "coaching_fix": "Position marriage as most important investment"
+    }},
+    "closing_strength": {{
+      "score": 2,
+      "analysis": "No clear commitment requests",
+      "coaching_fix": "Use assumptive close techniques"
+    }}
+  }},
+  "total_score": 27,
+  "overall_grade": "C"
+}}
 
-        Be surgical and specific. Include exact quotes when possible. Focus on marriage coaching sales specifics.
-
-        Respond with ONLY the JSON object.
-        """
+Respond with ONLY valid JSON matching this format."""
 
         try:
             response = await self.client.messages.create(
@@ -166,63 +137,53 @@ class MarriageCoachingAnalyzer:
     async def analyze_psychological_profile(self, content):
         """Big Five personality analysis for marriage coaching prospects"""
 
-        prompt = f"""
-        Analyze this marriage coaching prospect's psychological profile using Big Five personality traits.
+        prompt = f"""Analyze this prospect's personality from the marriage coaching call.
 
-        TRANSCRIPT:
-        {content}
+TRANSCRIPT:
+{content}
 
-        Provide Big Five personality analysis in JSON format:
-        {{
-          "big_five_personality": {{
-            "openness": {{
-              "score": 1-100,
-              "confidence": 80,
-              "implications": "How this affects their receptiveness to marriage coaching approach"
-            }},
-            "conscientiousness": {{
-              "score": 1-100,
-              "confidence": 85,
-              "implications": "Follow-through likelihood and structure needs for marriage work"
-            }},
-            "extraversion": {{
-              "score": 1-100,
-              "confidence": 75,
-              "implications": "Communication style and social approach to marriage issues"
-            }},
-            "agreeableness": {{
-              "score": 1-100,
-              "confidence": 85,
-              "implications": "Cooperation level and conflict handling in marriage context"
-            }},
-            "neuroticism": {{
-              "score": 1-100,
-              "confidence": 80,
-              "implications": "Emotional stability and stress management in marriage crisis"
-            }}
-          }},
-          "decision_making_style": {{
-            "primary_style": "analytical|emotional|intuitive|consensus",
-            "confidence": 85,
-            "time_preference": "immediate|days|weeks|months",
-            "information_needs": "minimal|moderate|extensive"
-          }},
-          "emotional_state": {{
-            "primary_emotion": "hopeful|anxious|skeptical|desperate|calm",
-            "intensity": 1-10,
-            "stability": 1-10
-          }},
-          "communication_preferences": {{
-            "directness": 1-10,
-            "detail_level": "high|medium|low",
-            "pace": "fast|moderate|slow"
-          }}
-        }}
+Rate their Big Five personality traits (1-100):
 
-        Focus on marriage-specific psychological insights that will help position coaching effectively.
+{{
+  "big_five_personality": {{
+    "openness": {{
+      "score": 75,
+      "confidence": 80,
+      "implications": "Open to new approaches for marriage improvement"
+    }},
+    "conscientiousness": {{
+      "score": 60,
+      "confidence": 85,
+      "implications": "Moderate follow-through likelihood"
+    }},
+    "extraversion": {{
+      "score": 45,
+      "confidence": 75,
+      "implications": "Introverted communication style"
+    }},
+    "agreeableness": {{
+      "score": 70,
+      "confidence": 85,
+      "implications": "Cooperative but conflict-avoidant"
+    }},
+    "neuroticism": {{
+      "score": 65,
+      "confidence": 80,
+      "implications": "Moderate stress about marriage situation"
+    }}
+  }},
+  "decision_making_style": {{
+    "primary_style": "emotional",
+    "confidence": 85
+  }},
+  "emotional_state": {{
+    "primary_emotion": "anxious",
+    "intensity": 7,
+    "stability": 5
+  }}
+}}
 
-        Respond with ONLY the JSON object.
-        """
+Respond with ONLY valid JSON matching this format."""
 
         try:
             response = await self.client.messages.create(
@@ -524,72 +485,34 @@ class MarriageCoachingAnalyzer:
     async def classify_marriage_archetype(self, content):
         """Classify into marriage coaching specific archetypes"""
 
-        prompt = f"""
-        Classify this prospect into one of the 5 marriage coaching archetypes based on the conversation.
+        prompt = f"""Classify this marriage coaching prospect into 1 of 5 archetypes:
 
-        TRANSCRIPT:
-        {content}
+TRANSCRIPT:
+{content}
 
-        Marriage Coaching Archetypes:
-        1. ANALYTICAL RESEARCHER - Data-driven, needs facts about success rates and methodology
-        2. DESPERATE SAVER - High urgency, emotional, facing imminent divorce or separation
-        3. HOPEFUL BUILDER - Optimistic, growth-focused, believes marriage can be better
-        4. SKEPTICAL EVALUATOR - Cautious, needs proof programs work, worried about scams
-        5. CONSENSUS SEEKER - Needs wife's buy-in, involves others in decision-making
+Archetypes:
+1. ANALYTICAL RESEARCHER - Data-driven, wants success rates
+2. DESPERATE SAVER - High urgency, facing divorce/separation
+3. HOPEFUL BUILDER - Optimistic, growth-focused
+4. SKEPTICAL EVALUATOR - Cautious, worried about scams
+5. CONSENSUS SEEKER - Needs spouse buy-in
 
-        Provide archetype analysis:
+{{
+  "primary_archetype": "DESPERATE SAVER",
+  "confidence_score": 0.8,
+  "secondary_archetype": "HOPEFUL BUILDER",
+  "archetype_evidence": {{
+    "supporting_quotes": ["We're really struggling", "Need help soon"],
+    "behavioral_indicators": ["High emotion", "Urgency expressed"]
+  }},
+  "archetype_coaching_strategy": {{
+    "optimal_approach": "Create urgency around timeline",
+    "key_motivators": ["Fear of divorce", "Saving family"],
+    "closing_strategy": "Emphasize limited time to save marriage"
+  }}
+}}
 
-        {{
-          "primary_archetype": "exact archetype name from list above",
-          "confidence_score": 0.0-1.0,
-          "secondary_archetype": "second most likely archetype",
-          "archetype_evidence": {{
-            "supporting_quotes": ["specific quotes supporting this classification"],
-            "behavioral_indicators": ["behaviors that indicate this archetype"],
-            "decision_making_style": "how they approach decisions based on conversation"
-          }},
-          "archetype_coaching_strategy": {{
-            "optimal_approach": "best sales approach for this archetype",
-            "key_motivators": ["what drives this archetype to buy"],
-            "objection_patterns": ["typical objections this archetype raises"],
-            "closing_strategy": "most effective closing approach",
-            "follow_up_approach": "how to follow up with this archetype"
-          }},
-          "pre_call_validation": {{
-            "recommended_questions": [
-              "What would you need to see to know this program could save your marriage?",
-              "On a scale of 1-10, how urgent is getting help for your marriage right now?",
-              "How does your wife feel about getting outside help for the relationship?",
-              "What's the biggest challenge in your marriage that you're hoping to solve?",
-              "Have you tried marriage counseling before? What was that experience like?",
-              "If money wasn't an issue, would you do whatever it takes to save your marriage?",
-              "What happens if nothing changes in your relationship over the next 6 months?",
-              "Who else would be involved in making this decision besides you?",
-              "What's your biggest concern about programs like this?",
-              "How much research have you done on marriage coaching programs so far?"
-            ],
-            "archetype_accuracy_prediction": 1-10,
-            "pre_call_archetype_identification": {{
-              "analytical_researcher_indicators": ["asks for success rates", "wants detailed methodology", "mentions research"],
-              "desperate_saver_indicators": ["high urgency score (8-10)", "mentions separation/divorce timeline", "emotional language"],
-              "hopeful_builder_indicators": ["growth-focused language", "optimistic about future", "mentions building together"],
-              "skeptical_evaluator_indicators": ["mentions scams", "wants guarantees", "previous bad experiences"],
-              "consensus_seeker_indicators": ["mentions wife's opinion", "involves others", "needs approval"]
-            }}
-          }},
-          "archetype_specific_scripts": {{
-            "opening_script": "tailored opening for this archetype",
-            "discovery_questions": ["archetype-specific discovery questions"],
-            "value_positioning": "how to position value for this archetype",
-            "objection_responses": ["responses to this archetype's typical objections"],
-            "closing_script": "closing approach for this archetype"
-          }}
-        }}
-
-        Be specific about marriage coaching archetype identification and pre-call question recommendations.
-
-        Respond with ONLY the JSON object.
-        """
+Respond with ONLY valid JSON matching this format."""
 
         try:
             response = await self.client.messages.create(
