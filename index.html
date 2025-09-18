@@ -230,6 +230,81 @@
             border-left: 4px solid #3b82f6;
         }
 
+        .framework-section {
+            background: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            border: 1px solid #e5e7eb;
+        }
+
+        .framework-item {
+            margin: 16px 0;
+            padding: 16px;
+            background: #f8fafc;
+            border-radius: 8px;
+            border-left: 4px solid #6366f1;
+        }
+
+        .framework-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .framework-icon {
+            font-size: 1.2em;
+        }
+
+        .framework-label {
+            font-weight: 600;
+            flex: 1;
+        }
+
+        .framework-score {
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        .score-green { color: #16a34a; }
+        .score-yellow { color: #ca8a04; }
+        .score-red { color: #dc2626; }
+
+        .framework-bar {
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            margin: 8px 0;
+            overflow: hidden;
+        }
+
+        .framework-bar-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .framework-bar-fill.score-green { background: #16a34a; }
+        .framework-bar-fill.score-yellow { background: #ca8a04; }
+        .framework-bar-fill.score-red { background: #dc2626; }
+
+        .framework-analysis {
+            font-size: 0.9em;
+            color: #4b5563;
+            margin: 8px 0;
+            font-style: italic;
+        }
+
+        .framework-coaching {
+            font-size: 0.9em;
+            color: #1f2937;
+            background: #fef3c7;
+            padding: 8px;
+            border-radius: 4px;
+            margin-top: 8px;
+        }
+
         .loading {
             display: none;
             text-align: center;
@@ -699,17 +774,27 @@
 
                 // Marriage coaching specific display
                 const framework = analysis.sales_framework_analysis?.framework_scores;
-                const totalScore = analysis.sales_framework_analysis?.total_score || 30;
+                const totalScore = analysis.sales_framework_analysis?.total_score;
                 const successProb = analysis.success_probability || 0.5;
 
                 console.log('📊 Framework data:', framework);
                 console.log('📊 Total score:', totalScore);
                 console.log('📊 Success prob:', successProb);
 
-                // Calculate average score from framework (out of 60, converted to percentage)
-                const avgFrameworkScore = framework ? Math.round((totalScore / 60) * 100) : 50;
+                // Calculate sales score more safely
+                let salesScore = 50; // default
+                if (framework && totalScore && !isNaN(totalScore)) {
+                    salesScore = Math.round((totalScore / 60) * 100);
+                } else if (framework) {
+                    // Calculate from individual scores if total not available
+                    const scores = Object.values(framework).map(cat => cat?.score || 0).filter(score => !isNaN(score));
+                    if (scores.length > 0) {
+                        const avgScore = scores.reduce((sum, score) => sum + score, 0) / scores.length;
+                        salesScore = Math.round((avgScore / 10) * 100);
+                    }
+                }
 
-                document.getElementById('salesScore').textContent = avgFrameworkScore;
+                document.getElementById('salesScore').textContent = salesScore;
                 document.getElementById('successProb').textContent = Math.round(successProb * 100) + '%';
 
                 // Update archetype
@@ -718,9 +803,22 @@
                 document.getElementById('archetypeName').textContent = archetype;
                 document.getElementById('archetypeDesc').textContent = this.getMarriageArchetypeDescription(archetype);
 
-                // For marriage analysis, show framework scores instead of Big Five
-                console.log('📈 Updating framework chart...');
-                this.updateMarriageFrameworkChart(framework);
+                // Show Big Five for prospect psychology (keep existing function)
+                const bigFive = analysis.psychological_profile?.big_five_personality;
+                console.log('🧠 Big Five data:', bigFive);
+                if (bigFive) {
+                    this.updatePersonalityChart(bigFive);
+                }
+
+                // Show framework scores for sales rep performance (new separate section)
+                console.log('📈 Creating framework section...');
+                this.createSalesRepFrameworkSection(framework);
+
+                // Add emotional journey if available
+                if (analysis.emotional_journey) {
+                    console.log('😊 Adding emotional journey...');
+                    this.displayEmotionalJourney(analysis.emotional_journey);
+                }
 
                 // Update marriage coaching recommendations
                 console.log('💡 Updating recommendations...');
@@ -739,61 +837,62 @@
                 return descriptions[archetype] || "Mixed characteristics from multiple marriage coaching archetypes.";
             }
 
-            updateMarriageFrameworkChart(framework) {
-                if (!framework) {
-                    // Hide personality chart if no framework data
-                    const personalitySection = document.querySelector('.personality-chart');
-                    if (personalitySection) {
-                        personalitySection.style.display = 'none';
-                    }
-                    return;
+            createSalesRepFrameworkSection(framework) {
+                if (!framework) return;
+
+                // Find or create the framework section
+                let frameworkSection = document.getElementById('salesRepFramework');
+                if (!frameworkSection) {
+                    // Insert after personality chart
+                    const personalityChart = document.querySelector('.personality-chart');
+                    frameworkSection = document.createElement('div');
+                    frameworkSection.id = 'salesRepFramework';
+                    frameworkSection.className = 'framework-section';
+                    frameworkSection.innerHTML = `
+                        <h4 style="margin-bottom: 1rem; color: #2c3e50;">🎯 Sales Rep Performance Framework</h4>
+                        <div id="frameworkScores"></div>
+                    `;
+                    personalityChart.insertAdjacentElement('afterend', frameworkSection);
                 }
 
-                // Update the chart title
-                const chartTitle = document.querySelector('.personality-chart h4');
-                if (chartTitle) {
-                    chartTitle.textContent = '🎯 Marriage Coaching Framework Scores';
-                }
-
-                // Map framework categories to existing personality elements
-                const frameworkMap = [
-                    { framework: 'call_control', element: 'openness', label: 'Call Control' },
-                    { framework: 'discovery_depth', element: 'conscientiousness', label: 'Discovery Depth' },
-                    { framework: 'empathetic_confrontation', element: 'extraversion', label: 'Empathetic Confrontation' },
-                    { framework: 'objection_handling', element: 'agreeableness', label: 'Objection Handling' },
-                    { framework: 'value_positioning', element: 'neuroticism', label: 'Value Positioning' }
+                const frameworkCategories = [
+                    { key: 'call_control', label: 'Call Control', icon: '🎛️' },
+                    { key: 'discovery_depth', label: 'Discovery Depth', icon: '🔍' },
+                    { key: 'empathetic_confrontation', label: 'Empathetic Confrontation', icon: '💝' },
+                    { key: 'objection_handling', label: 'Objection Handling', icon: '🛡️' },
+                    { key: 'value_positioning', label: 'Value Positioning', icon: '💎' },
+                    { key: 'closing_strength', label: 'Closing Strength', icon: '🎯' }
                 ];
 
-                frameworkMap.forEach(mapping => {
-                    const score = framework[mapping.framework]?.score || 5;
-                    const scoreElement = document.getElementById(mapping.element + 'Score');
-                    const barElement = document.getElementById(mapping.element + 'Bar');
-                    const labelElement = document.querySelector(`#${mapping.element}Score`).parentNode.querySelector('span:first-child');
+                let frameworkHTML = '';
+                frameworkCategories.forEach(category => {
+                    const categoryData = framework[category.key];
+                    const score = categoryData?.score || 5;
+                    const analysis = categoryData?.analysis || 'Analysis not available';
+                    const coachingFix = categoryData?.coaching_fix || 'No specific coaching recommendation';
 
-                    if (scoreElement && barElement && labelElement) {
-                        // Update label
-                        labelElement.textContent = mapping.label;
+                    // Color coding
+                    let colorClass = 'score-red';
+                    if (score >= 8) colorClass = 'score-green';
+                    else if (score >= 6) colorClass = 'score-yellow';
 
-                        // Update score
-                        scoreElement.textContent = `${score}/10`;
-
-                        // Update bar width (score out of 10, so multiply by 10 for percentage)
-                        barElement.style.width = (score * 10) + '%';
-
-                        // Color coding based on score
-                        if (score >= 8) {
-                            barElement.style.background = '#22c55e'; // Green
-                        } else if (score >= 6) {
-                            barElement.style.background = '#eab308'; // Yellow
-                        } else {
-                            barElement.style.background = '#ef4444'; // Red
-                        }
-                    }
+                    frameworkHTML += `
+                        <div class="framework-item">
+                            <div class="framework-header">
+                                <span class="framework-icon">${category.icon}</span>
+                                <span class="framework-label">${category.label}</span>
+                                <span class="framework-score ${colorClass}">${score}/10</span>
+                            </div>
+                            <div class="framework-bar">
+                                <div class="framework-bar-fill ${colorClass}" style="width: ${score * 10}%"></div>
+                            </div>
+                            <div class="framework-analysis">${analysis}</div>
+                            <div class="framework-coaching"><strong>Coaching:</strong> ${coachingFix}</div>
+                        </div>
+                    `;
                 });
 
-                // Handle closing strength separately (we only have 5 elements, but 6 framework categories)
-                const closingScore = framework.closing_strength?.score || 5;
-                console.log(`Closing Strength Score: ${closingScore}/10 (displayed in recommendations)`);
+                document.getElementById('frameworkScores').innerHTML = frameworkHTML;
             }
 
             updateMarriageRecommendations(analysis) {

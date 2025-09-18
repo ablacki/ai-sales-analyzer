@@ -33,6 +33,7 @@ class MarriageCoachingAnalyzer:
 
             # Run comprehensive analysis
             sales_framework_analysis = await self.analyze_sales_framework(content)
+            psychological_analysis = await self.analyze_psychological_profile(content)
             marriage_specific_analysis = await self.analyze_marriage_coaching_specifics(content)
             emotional_journey = await self.analyze_emotional_journey(content)
             archetype_classification = await self.classify_marriage_archetype(content)
@@ -46,6 +47,7 @@ class MarriageCoachingAnalyzer:
 
                 # Core analyses
                 'sales_framework_analysis': sales_framework_analysis,
+                'psychological_profile': psychological_analysis,
                 'marriage_coaching_analysis': marriage_specific_analysis,
                 'emotional_journey': emotional_journey,
                 'archetype_analysis': archetype_classification,
@@ -160,6 +162,84 @@ class MarriageCoachingAnalyzer:
         except Exception as e:
             logger.error(f"Sales framework analysis error: {str(e)}")
             return self.get_fallback_sales_framework()
+
+    async def analyze_psychological_profile(self, content):
+        """Big Five personality analysis for marriage coaching prospects"""
+
+        prompt = f"""
+        Analyze this marriage coaching prospect's psychological profile using Big Five personality traits.
+
+        TRANSCRIPT:
+        {content}
+
+        Provide Big Five personality analysis in JSON format:
+        {{
+          "big_five_personality": {{
+            "openness": {{
+              "score": 1-100,
+              "confidence": 80,
+              "implications": "How this affects their receptiveness to marriage coaching approach"
+            }},
+            "conscientiousness": {{
+              "score": 1-100,
+              "confidence": 85,
+              "implications": "Follow-through likelihood and structure needs for marriage work"
+            }},
+            "extraversion": {{
+              "score": 1-100,
+              "confidence": 75,
+              "implications": "Communication style and social approach to marriage issues"
+            }},
+            "agreeableness": {{
+              "score": 1-100,
+              "confidence": 85,
+              "implications": "Cooperation level and conflict handling in marriage context"
+            }},
+            "neuroticism": {{
+              "score": 1-100,
+              "confidence": 80,
+              "implications": "Emotional stability and stress management in marriage crisis"
+            }}
+          }},
+          "decision_making_style": {{
+            "primary_style": "analytical|emotional|intuitive|consensus",
+            "confidence": 85,
+            "time_preference": "immediate|days|weeks|months",
+            "information_needs": "minimal|moderate|extensive"
+          }},
+          "emotional_state": {{
+            "primary_emotion": "hopeful|anxious|skeptical|desperate|calm",
+            "intensity": 1-10,
+            "stability": 1-10
+          }},
+          "communication_preferences": {{
+            "directness": 1-10,
+            "detail_level": "high|medium|low",
+            "pace": "fast|moderate|slow"
+          }}
+        }}
+
+        Focus on marriage-specific psychological insights that will help position coaching effectively.
+
+        Respond with ONLY the JSON object.
+        """
+
+        try:
+            response = await self.client.messages.create(
+                model="claude-3-5-sonnet-20241022",
+                max_tokens=2000,
+                messages=[{"role": "user", "content": prompt}]
+            )
+
+            response_text = response.content[0].text.strip()
+            if response_text.startswith('```json'):
+                response_text = response_text.replace('```json', '').replace('```', '').strip()
+
+            return json.loads(response_text)
+
+        except Exception as e:
+            logger.error(f"Psychological analysis error: {str(e)}")
+            return self.get_fallback_psychological_analysis()
 
     async def analyze_marriage_coaching_specifics(self, content):
         """Marriage coaching specific analysis"""
@@ -749,6 +829,20 @@ class MarriageCoachingAnalyzer:
             "secondary_archetype": "Hopeful Builder",
             "archetype_evidence": {"supporting_quotes": [], "behavioral_indicators": []},
             "pre_call_validation": {"recommended_questions": [], "archetype_accuracy_prediction": 5}
+        }
+
+    def get_fallback_psychological_analysis(self):
+        return {
+            "big_five_personality": {
+                "openness": {"score": 50, "confidence": 50, "implications": "analysis unavailable"},
+                "conscientiousness": {"score": 50, "confidence": 50, "implications": "analysis unavailable"},
+                "extraversion": {"score": 50, "confidence": 50, "implications": "analysis unavailable"},
+                "agreeableness": {"score": 50, "confidence": 50, "implications": "analysis unavailable"},
+                "neuroticism": {"score": 50, "confidence": 50, "implications": "analysis unavailable"}
+            },
+            "decision_making_style": {"primary_style": "mixed", "confidence": 50},
+            "emotional_state": {"primary_emotion": "neutral", "intensity": 5, "stability": 5},
+            "communication_preferences": {"directness": 5, "detail_level": "medium", "pace": "moderate"}
         }
 
     def get_fallback_talk_track(self):
