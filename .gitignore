@@ -1,0 +1,86 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Environment variables
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# API Keys (security)
+*api_key*
+*API_KEY*
+*.key
+
+# Database files (contain sensitive data)
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+logs/
+*.log
+
+# Results and exports (may contain sensitive data)
+enhanced_results/
+exports/
+test_results_*.json
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Transcript files (contain sensitive client data)
+Test Transcripts/
+Original Test Transcripts/
+Processed Transcripts*/
+transcript-analyzer/
+flattened_transcripts/
+
+# Backup directories
+backup_*/
+
+# Legacy files
+*_old.*
+*.save
+*.backup
+
+# Temporary files
+*.tmp
+*.temp
+temp/
