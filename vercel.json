@@ -5,6 +5,10 @@
       "use": "@vercel/python"
     },
     {
+      "src": "api/marriage_analyze.py",
+      "use": "@vercel/python"
+    },
+    {
       "src": "api/health.py",
       "use": "@vercel/python"
     },
@@ -17,6 +21,10 @@
     {
       "src": "/api/analyze",
       "dest": "/api/analyze.py"
+    },
+    {
+      "src": "/api/marriage-analyze",
+      "dest": "/api/marriage_analyze.py"
     },
     {
       "src": "/api/health",

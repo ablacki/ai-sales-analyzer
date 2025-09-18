@@ -202,6 +202,34 @@
             margin-bottom: 0.5rem;
         }
 
+        .critical-alert {
+            background: #fee2e2;
+            border: 1px solid #fca5a5;
+            color: #dc2626;
+            padding: 12px;
+            border-radius: 6px;
+            margin: 8px 0;
+            font-weight: 600;
+        }
+
+        .warning-alert {
+            background: #fef3c7;
+            border: 1px solid #fcd34d;
+            color: #d97706;
+            padding: 12px;
+            border-radius: 6px;
+            margin: 8px 0;
+            font-weight: 600;
+        }
+
+        .recommendation-section {
+            margin: 16px 0;
+            padding: 16px;
+            background: #f9fafb;
+            border-radius: 8px;
+            border-left: 4px solid #3b82f6;
+        }
+
         .loading {
             display: none;
             text-align: center;
@@ -310,6 +338,16 @@
                     </div>
                 </div>
                 <input type="file" id="fileInput" accept=".txt,.json" style="display: none;">
+
+                <div style="margin: 20px 0; text-align: center;">
+                    <label style="display: inline-flex; align-items: center; gap: 10px; background: #f0f8ff; padding: 12px 20px; border-radius: 8px; border: 2px solid #4a90e2; cursor: pointer;">
+                        <input type="checkbox" id="marriageCoachingMode" style="transform: scale(1.2);">
+                        <span style="font-weight: 600; color: #2c5282;">🏠 Use Marriage Coaching Analysis (Enhanced)</span>
+                    </label>
+                    <div style="margin-top: 8px; font-size: 12px; color: #666;">
+                        Enhanced analysis with empathetic confrontation tracking, marriage analogies, and surgical coaching feedback
+                    </div>
+                </div>
 
                 <div class="loading" id="loadingIndicator">
                     <div class="spinner"></div>
@@ -511,15 +549,20 @@
             }
 
             async performRealAnalysis(content, filename) {
+                // Check if marriage coaching analysis is selected
+                const useMarriageAnalysis = document.getElementById('marriageCoachingMode')?.checked || false;
+                const endpoint = useMarriageAnalysis ? '/api/marriage-analyze' : '/api/analyze';
+
                 // Call the real Vercel API endpoint
                 console.log('🔍 Starting real AI analysis...');
+                console.log('Analysis type:', useMarriageAnalysis ? 'Marriage Coaching' : 'General Sales');
                 console.log('Content length:', content.length);
                 console.log('Filename:', filename);
 
                 try {
-                    console.log('📡 Making API call to /api/analyze');
+                    console.log('📡 Making API call to', endpoint);
 
-                    const response = await fetch('/api/analyze', {
+                    const response = await fetch(endpoint, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -609,26 +652,152 @@
                 // Show analysis section
                 document.getElementById('analysisResults').style.display = 'block';
 
+                // Check if this is marriage coaching analysis or general analysis
+                const isMarriageAnalysis = analysis.sales_framework_analysis || analysis.marriage_coaching_analysis;
+
+                if (isMarriageAnalysis) {
+                    // Marriage coaching analysis format
+                    this.displayMarriageCoachingResults(analysis);
+                } else {
+                    // General sales analysis format
+                    this.displayGeneralSalesResults(analysis);
+                }
+
+                // Scroll to results
+                document.getElementById('analysisResults').scrollIntoView({ behavior: 'smooth' });
+            }
+
+            displayGeneralSalesResults(analysis) {
                 // Update metrics
-                const salesScore = analysis.sales_performance.overall_assessment.performance_score;
-                const successProb = analysis.success_probability;
+                const salesScore = analysis.sales_performance?.overall_assessment?.performance_score || 50;
+                const successProb = analysis.success_probability || 0.5;
 
                 document.getElementById('salesScore').textContent = salesScore;
                 document.getElementById('successProb').textContent = Math.round(successProb * 100) + '%';
 
                 // Update archetype
-                const archetype = analysis.archetype_analysis.primary_archetype;
+                const archetype = analysis.archetype_analysis?.primary_archetype || 'Mixed Profile';
                 document.getElementById('archetypeName').textContent = archetype;
                 document.getElementById('archetypeDesc').textContent = this.getArchetypeDescription(archetype);
 
                 // Update Big Five personality chart
-                this.updatePersonalityChart(analysis.psychological_profile.big_five_personality);
+                this.updatePersonalityChart(analysis.psychological_profile?.big_five_personality);
 
                 // Update recommendations
                 this.updateRecommendations(analysis.coaching_recommendations);
+            }
 
-                // Scroll to results
-                document.getElementById('analysisResults').scrollIntoView({ behavior: 'smooth' });
+            displayMarriageCoachingResults(analysis) {
+                // Marriage coaching specific display
+                const framework = analysis.sales_framework_analysis?.framework_scores;
+                const totalScore = analysis.sales_framework_analysis?.total_score || 30;
+                const successProb = analysis.success_probability || 0.5;
+
+                // Calculate average score from framework (out of 60, converted to percentage)
+                const avgFrameworkScore = framework ? Math.round((totalScore / 60) * 100) : 50;
+
+                document.getElementById('salesScore').textContent = avgFrameworkScore;
+                document.getElementById('successProb').textContent = Math.round(successProb * 100) + '%';
+
+                // Update archetype
+                const archetype = analysis.archetype_analysis?.primary_archetype || 'Mixed Profile';
+                document.getElementById('archetypeName').textContent = archetype;
+                document.getElementById('archetypeDesc').textContent = this.getMarriageArchetypeDescription(archetype);
+
+                // For marriage analysis, show framework scores instead of Big Five
+                this.updateMarriageFrameworkChart(framework);
+
+                // Update marriage coaching recommendations
+                this.updateMarriageRecommendations(analysis);
+            }
+
+            getMarriageArchetypeDescription(archetype) {
+                const descriptions = {
+                    "Analytical Researcher": "Data-driven, needs facts about success rates and methodology for marriage coaching programs.",
+                    "Desperate Saver": "High urgency, emotional state, facing imminent divorce or separation - needs immediate help.",
+                    "Hopeful Builder": "Optimistic and growth-focused, believes marriage can improve and become stronger.",
+                    "Skeptical Evaluator": "Cautious approach, needs proof programs work, concerned about marriage coaching scams.",
+                    "Consensus Seeker": "Requires spouse buy-in, involves others in decision-making process."
+                };
+                return descriptions[archetype] || "Mixed characteristics from multiple marriage coaching archetypes.";
+            }
+
+            updateMarriageFrameworkChart(framework) {
+                if (!framework) return;
+
+                const categories = ['call_control', 'discovery_depth', 'empathetic_confrontation',
+                                 'objection_handling', 'value_positioning', 'closing_strength'];
+
+                categories.forEach(category => {
+                    const score = framework[category]?.score || 5;
+                    const scoreElement = document.getElementById(category + 'Score');
+                    const barElement = document.getElementById(category + 'Bar');
+
+                    if (scoreElement && barElement) {
+                        scoreElement.textContent = score;
+                        barElement.style.width = (score * 10) + '%';
+
+                        // Color coding based on score
+                        if (score >= 8) {
+                            barElement.style.background = '#22c55e';
+                        } else if (score >= 6) {
+                            barElement.style.background = '#eab308';
+                        } else {
+                            barElement.style.background = '#ef4444';
+                        }
+                    }
+                });
+            }
+
+            updateMarriageRecommendations(analysis) {
+                const recommendations = document.getElementById('recommendations');
+                if (!recommendations) return;
+
+                const marriageCoaching = analysis.marriage_coaching_analysis?.coaching_triggers;
+                const talkTrack = analysis.talk_track_improvements?.script_drilling_priorities;
+                const archetype = analysis.archetype_analysis?.archetype_coaching_strategy;
+
+                let html = '<h3>🎯 Marriage Coaching Recommendations</h3>';
+
+                // Critical triggers
+                if (marriageCoaching?.critical_intervention_needed) {
+                    const triggers = marriageCoaching.critical_intervention_needed;
+                    html += '<div class="recommendation-section">';
+                    html += '<h4>🚨 Immediate Coaching Needed</h4>';
+
+                    if (triggers.high_probability_miss?.triggered) {
+                        html += `<div class="critical-alert">HIGH PROBABILITY MISS: ${triggers.high_probability_miss.immediate_coaching_action || 'Review missed closing opportunities'}</div>`;
+                    }
+                    if (triggers.empathy_confrontation_imbalance?.triggered) {
+                        html += `<div class="warning-alert">EMPATHY/CONFRONTATION IMBALANCE: ${triggers.empathy_confrontation_imbalance.coaching_correction || 'Balance empathy with confrontation'}</div>`;
+                    }
+                    html += '</div>';
+                }
+
+                // Talk track improvements
+                if (talkTrack?.top_3_scripts_to_master) {
+                    html += '<div class="recommendation-section">';
+                    html += '<h4>📝 Scripts to Master</h4>';
+                    html += '<ol>';
+                    talkTrack.top_3_scripts_to_master.forEach(script => {
+                        html += `<li>${script}</li>`;
+                    });
+                    html += '</ol>';
+                    html += '</div>';
+                }
+
+                // Archetype strategy
+                if (archetype?.optimal_approach) {
+                    html += '<div class="recommendation-section">';
+                    html += '<h4>🎯 Archetype Strategy</h4>';
+                    html += `<p><strong>Optimal Approach:</strong> ${archetype.optimal_approach}</p>`;
+                    if (archetype.closing_strategy) {
+                        html += `<p><strong>Closing Strategy:</strong> ${archetype.closing_strategy}</p>`;
+                    }
+                    html += '</div>';
+                }
+
+                recommendations.innerHTML = html;
             }
 
             updatePersonalityChart(bigFive) {
