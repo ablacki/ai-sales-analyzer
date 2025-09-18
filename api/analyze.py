@@ -395,12 +395,26 @@ class handler(BaseHTTPRequestHandler):
     def do_POST(self):
         """Handle POST requests for AI analysis"""
         try:
-            # Get API key from environment
+            # Get API key from environment with debugging
             api_key = os.environ.get('ANTHROPIC_API_KEY')
+
+            # Debug logging for environment variables
+            logger.info(f"Environment variables available: {list(os.environ.keys())}")
+            logger.info(f"ANTHROPIC_API_KEY present: {'ANTHROPIC_API_KEY' in os.environ}")
+            if api_key:
+                logger.info(f"API key found, length: {len(api_key)}, starts with: {api_key[:10]}...")
+            else:
+                logger.error("API key not found in environment variables")
+
             if not api_key:
                 self.send_error_response(500, {
                     'error': 'API key not configured',
-                    'message': 'Please set ANTHROPIC_API_KEY environment variable in Vercel'
+                    'message': 'Please set ANTHROPIC_API_KEY environment variable in Vercel',
+                    'debug': {
+                        'env_vars_count': len(os.environ),
+                        'has_anthropic_key': 'ANTHROPIC_API_KEY' in os.environ,
+                        'available_keys': [k for k in os.environ.keys() if 'API' in k.upper() or 'ANTHROP' in k.upper()]
+                    }
                 })
                 return
 
