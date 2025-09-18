@@ -305,6 +305,108 @@
             margin-top: 8px;
         }
 
+        .framework-recommendation {
+            margin: 8px 0;
+            padding: 10px;
+            background: #f0f9ff;
+            border-left: 3px solid #0ea5e9;
+            border-radius: 4px;
+        }
+
+        .emotional-journey-section {
+            background: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            border: 1px solid #e5e7eb;
+        }
+
+        .journey-summary {
+            background: #f0f9ff;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 16px;
+            border-left: 4px solid #0ea5e9;
+        }
+
+        .journey-phases {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .journey-phase {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .phase-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+        }
+
+        .phase-number {
+            background: #3b82f6;
+            color: white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .phase-name {
+            font-weight: 600;
+            color: #1e40af;
+        }
+
+        .emotion-badge {
+            background: #fef3c7;
+            color: #92400e;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+        }
+
+        .intensity-badge {
+            background: #e0e7ff;
+            color: #3730a3;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+        }
+
+        .phase-trigger {
+            font-size: 0.9em;
+            color: #4b5563;
+            margin: 8px 0;
+            font-style: italic;
+        }
+
+        .phase-coaching {
+            font-size: 0.9em;
+            background: #fef2f2;
+            color: #991b1b;
+            padding: 8px;
+            border-radius: 4px;
+            margin-top: 8px;
+        }
+
+        .no-journey-data {
+            text-align: center;
+            color: #6b7280;
+            font-style: italic;
+            padding: 20px;
+        }
+
         .loading {
             display: none;
             text-align: center;
@@ -911,6 +1013,86 @@
                 console.log('✅ createSalesRepFrameworkSection completed successfully');
             }
 
+            displayEmotionalJourney(emotionalJourney) {
+                console.log('😊 displayEmotionalJourney called with:', emotionalJourney);
+
+                // Find or create emotional journey section
+                let journeySection = document.getElementById('emotionalJourney');
+                if (!journeySection) {
+                    const frameworkSection = document.getElementById('salesRepFramework');
+                    if (!frameworkSection) {
+                        console.error('❌ No framework section found to insert emotional journey after');
+                        return;
+                    }
+
+                    journeySection = document.createElement('div');
+                    journeySection.id = 'emotionalJourney';
+                    journeySection.className = 'emotional-journey-section';
+                    journeySection.innerHTML = `
+                        <h4 style="margin-bottom: 1rem; color: #2c3e50;">😊 Prospect's Emotional Journey</h4>
+                        <div id="journeyPhases"></div>
+                    `;
+                    frameworkSection.insertAdjacentElement('afterend', journeySection);
+                    console.log('😊 Created new emotional journey section');
+                } else {
+                    console.log('📋 Emotional journey section already exists');
+                }
+
+                const phases = emotionalJourney.emotional_journey_phases || [];
+                const patterns = emotionalJourney.emotional_patterns || {};
+
+                let journeyHTML = '';
+
+                if (patterns.dominant_emotion) {
+                    journeyHTML += `
+                        <div class="journey-summary">
+                            <strong>Dominant Emotion:</strong> ${patterns.dominant_emotion}
+                        </div>
+                    `;
+                }
+
+                if (phases.length > 0) {
+                    journeyHTML += '<div class="journey-phases">';
+                    phases.forEach((phase, index) => {
+                        const emotionIcon = this.getEmotionIcon(phase.emotional_state);
+                        journeyHTML += `
+                            <div class="journey-phase">
+                                <div class="phase-header">
+                                    <span class="phase-number">${index + 1}</span>
+                                    <span class="phase-name">${phase.phase}</span>
+                                    <span class="emotion-badge">${emotionIcon} ${phase.emotional_state}</span>
+                                    <span class="intensity-badge">Intensity: ${phase.intensity}/10</span>
+                                </div>
+                                <div class="phase-trigger">${phase.trigger_moment}</div>
+                                <div class="phase-coaching">${phase.coaching_note}</div>
+                            </div>
+                        `;
+                    });
+                    journeyHTML += '</div>';
+                } else {
+                    journeyHTML += '<div class="no-journey-data">Emotional journey data not available</div>';
+                }
+
+                document.getElementById('journeyPhases').innerHTML = journeyHTML;
+                console.log('✅ Emotional journey display completed');
+            }
+
+            getEmotionIcon(emotion) {
+                const icons = {
+                    'hopeful': '🤞',
+                    'desperate': '😰',
+                    'defensive': '🛡️',
+                    'angry': '😠',
+                    'resigned': '😔',
+                    'motivated': '💪',
+                    'skeptical': '🤔',
+                    'curious': '🧐',
+                    'calm': '😌',
+                    'confused': '😕'
+                };
+                return icons[emotion] || '😐';
+            }
+
             updateMarriageRecommendations(analysis) {
                 const recommendations = document.getElementById('recommendationsContainer');
                 if (!recommendations) {
@@ -918,14 +1100,46 @@
                     return;
                 }
                 console.log('📝 Found recommendations container');
+                console.log('📊 Analysis structure for recommendations:', Object.keys(analysis));
 
+                // Extract data from different parts of the analysis
+                const framework = analysis.sales_framework_analysis?.framework_scores;
                 const marriageCoaching = analysis.marriage_coaching_analysis?.coaching_triggers;
                 const talkTrack = analysis.talk_track_improvements?.script_drilling_priorities;
                 const archetype = analysis.archetype_analysis?.archetype_coaching_strategy;
 
+                console.log('🔍 Recommendation data sources:');
+                console.log('- Framework:', !!framework);
+                console.log('- Marriage coaching:', !!marriageCoaching);
+                console.log('- Talk track:', !!talkTrack);
+                console.log('- Archetype:', !!archetype);
+
                 let html = '<h3>🎯 Marriage Coaching Recommendations</h3>';
 
-                // Critical triggers
+                // Framework-based recommendations (from actual API data)
+                if (framework) {
+                    html += '<div class="recommendation-section">';
+                    html += '<h4>🔧 Performance Improvements</h4>';
+
+                    Object.entries(framework).forEach(([key, data]) => {
+                        if (data.coaching_fix && data.coaching_fix !== 'No specific coaching recommendation') {
+                            const labels = {
+                                'call_control': '🎛️ Call Control',
+                                'discovery_depth': '🔍 Discovery Depth',
+                                'empathetic_confrontation': '💝 Empathetic Confrontation',
+                                'objection_handling': '🛡️ Objection Handling',
+                                'value_positioning': '💎 Value Positioning',
+                                'closing_strength': '🎯 Closing Strength'
+                            };
+                            html += `<div class="framework-recommendation">
+                                <strong>${labels[key] || key}:</strong> ${data.coaching_fix}
+                            </div>`;
+                        }
+                    });
+                    html += '</div>';
+                }
+
+                // Critical triggers (if available)
                 if (marriageCoaching?.critical_intervention_needed) {
                     const triggers = marriageCoaching.critical_intervention_needed;
                     html += '<div class="recommendation-section">';
@@ -941,12 +1155,14 @@
                 }
 
                 // Talk track improvements
-                if (talkTrack?.top_3_scripts_to_master) {
+                if (talkTrack?.top_3_scripts_to_master && talkTrack.top_3_scripts_to_master.some(script => script !== 'analysis unavailable')) {
                     html += '<div class="recommendation-section">';
                     html += '<h4>📝 Scripts to Master</h4>';
                     html += '<ol>';
                     talkTrack.top_3_scripts_to_master.forEach(script => {
-                        html += `<li>${script}</li>`;
+                        if (script !== 'analysis unavailable') {
+                            html += `<li>${script}</li>`;
+                        }
                     });
                     html += '</ol>';
                     html += '</div>';
@@ -963,7 +1179,16 @@
                     html += '</div>';
                 }
 
+                // Fallback if no recommendations found
+                if (html === '<h3>🎯 Marriage Coaching Recommendations</h3>') {
+                    html += '<div class="recommendation-section">';
+                    html += '<h4>⚠️ Analysis in Progress</h4>';
+                    html += '<p>Recommendations are being generated based on the framework analysis. The AI analysis may need more detailed transcript content to provide specific coaching recommendations.</p>';
+                    html += '</div>';
+                }
+
                 recommendations.innerHTML = html;
+                console.log('✅ Recommendations updated with:', html.length, 'characters');
             }
 
             updatePersonalityChart(bigFive) {
