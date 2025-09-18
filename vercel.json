@@ -1,10 +1,14 @@
 {
-  "version": 2,
-  "functions": {
-    "api/analyze.py": {
-      "runtime": "@vercel/python"
+  "builds": [
+    {
+      "src": "api/analyze.py",
+      "use": "@vercel/python"
+    },
+    {
+      "src": "index.html",
+      "use": "@vercel/static"
     }
-  },
+  ],
   "routes": [
     {
       "src": "/api/analyze",
