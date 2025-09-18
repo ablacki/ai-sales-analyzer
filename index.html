@@ -849,8 +849,13 @@
                 // Find or create the framework section
                 let frameworkSection = document.getElementById('salesRepFramework');
                 if (!frameworkSection) {
-                    // Insert after personality chart
-                    const personalityChart = document.querySelector('.personality-chart');
+                    // Insert after Big Five personality chart
+                    const personalityChart = document.querySelector('.big-five-chart');
+                    if (!personalityChart) {
+                        console.error('❌ Could not find .big-five-chart element');
+                        return;
+                    }
+
                     frameworkSection = document.createElement('div');
                     frameworkSection.id = 'salesRepFramework';
                     frameworkSection.className = 'framework-section';
