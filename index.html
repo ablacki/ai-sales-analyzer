@@ -652,13 +652,20 @@
                 // Show analysis section
                 document.getElementById('analysisResults').style.display = 'block';
 
+                // Debug: Log the analysis structure
+                console.log('🔍 Analysis structure received:', Object.keys(analysis));
+                console.log('🔍 Full analysis data:', analysis);
+
                 // Check if this is marriage coaching analysis or general analysis
                 const isMarriageAnalysis = analysis.sales_framework_analysis || analysis.marriage_coaching_analysis;
+                console.log('📊 Is marriage analysis?', isMarriageAnalysis);
 
                 if (isMarriageAnalysis) {
+                    console.log('🎯 Using marriage coaching display');
                     // Marriage coaching analysis format
                     this.displayMarriageCoachingResults(analysis);
                 } else {
+                    console.log('📈 Using general sales display');
                     // General sales analysis format
                     this.displayGeneralSalesResults(analysis);
                 }
@@ -688,10 +695,16 @@
             }
 
             displayMarriageCoachingResults(analysis) {
+                console.log('🏠 Marriage coaching display starting...');
+
                 // Marriage coaching specific display
                 const framework = analysis.sales_framework_analysis?.framework_scores;
                 const totalScore = analysis.sales_framework_analysis?.total_score || 30;
                 const successProb = analysis.success_probability || 0.5;
+
+                console.log('📊 Framework data:', framework);
+                console.log('📊 Total score:', totalScore);
+                console.log('📊 Success prob:', successProb);
 
                 // Calculate average score from framework (out of 60, converted to percentage)
                 const avgFrameworkScore = framework ? Math.round((totalScore / 60) * 100) : 50;
@@ -701,14 +714,18 @@
 
                 // Update archetype
                 const archetype = analysis.archetype_analysis?.primary_archetype || 'Mixed Profile';
+                console.log('🎯 Archetype:', archetype);
                 document.getElementById('archetypeName').textContent = archetype;
                 document.getElementById('archetypeDesc').textContent = this.getMarriageArchetypeDescription(archetype);
 
                 // For marriage analysis, show framework scores instead of Big Five
+                console.log('📈 Updating framework chart...');
                 this.updateMarriageFrameworkChart(framework);
 
                 // Update marriage coaching recommendations
+                console.log('💡 Updating recommendations...');
                 this.updateMarriageRecommendations(analysis);
+                console.log('✅ Marriage coaching display complete');
             }
 
             getMarriageArchetypeDescription(archetype) {
@@ -723,35 +740,69 @@
             }
 
             updateMarriageFrameworkChart(framework) {
-                if (!framework) return;
+                if (!framework) {
+                    // Hide personality chart if no framework data
+                    const personalitySection = document.querySelector('.personality-chart');
+                    if (personalitySection) {
+                        personalitySection.style.display = 'none';
+                    }
+                    return;
+                }
 
-                const categories = ['call_control', 'discovery_depth', 'empathetic_confrontation',
-                                 'objection_handling', 'value_positioning', 'closing_strength'];
+                // Update the chart title
+                const chartTitle = document.querySelector('.personality-chart h4');
+                if (chartTitle) {
+                    chartTitle.textContent = '🎯 Marriage Coaching Framework Scores';
+                }
 
-                categories.forEach(category => {
-                    const score = framework[category]?.score || 5;
-                    const scoreElement = document.getElementById(category + 'Score');
-                    const barElement = document.getElementById(category + 'Bar');
+                // Map framework categories to existing personality elements
+                const frameworkMap = [
+                    { framework: 'call_control', element: 'openness', label: 'Call Control' },
+                    { framework: 'discovery_depth', element: 'conscientiousness', label: 'Discovery Depth' },
+                    { framework: 'empathetic_confrontation', element: 'extraversion', label: 'Empathetic Confrontation' },
+                    { framework: 'objection_handling', element: 'agreeableness', label: 'Objection Handling' },
+                    { framework: 'value_positioning', element: 'neuroticism', label: 'Value Positioning' }
+                ];
 
-                    if (scoreElement && barElement) {
-                        scoreElement.textContent = score;
+                frameworkMap.forEach(mapping => {
+                    const score = framework[mapping.framework]?.score || 5;
+                    const scoreElement = document.getElementById(mapping.element + 'Score');
+                    const barElement = document.getElementById(mapping.element + 'Bar');
+                    const labelElement = document.querySelector(`#${mapping.element}Score`).parentNode.querySelector('span:first-child');
+
+                    if (scoreElement && barElement && labelElement) {
+                        // Update label
+                        labelElement.textContent = mapping.label;
+
+                        // Update score
+                        scoreElement.textContent = `${score}/10`;
+
+                        // Update bar width (score out of 10, so multiply by 10 for percentage)
                         barElement.style.width = (score * 10) + '%';
 
                         // Color coding based on score
                         if (score >= 8) {
-                            barElement.style.background = '#22c55e';
+                            barElement.style.background = '#22c55e'; // Green
                         } else if (score >= 6) {
-                            barElement.style.background = '#eab308';
+                            barElement.style.background = '#eab308'; // Yellow
                         } else {
-                            barElement.style.background = '#ef4444';
+                            barElement.style.background = '#ef4444'; // Red
                         }
                     }
                 });
+
+                // Handle closing strength separately (we only have 5 elements, but 6 framework categories)
+                const closingScore = framework.closing_strength?.score || 5;
+                console.log(`Closing Strength Score: ${closingScore}/10 (displayed in recommendations)`);
             }
 
             updateMarriageRecommendations(analysis) {
-                const recommendations = document.getElementById('recommendations');
-                if (!recommendations) return;
+                const recommendations = document.getElementById('recommendationsContainer');
+                if (!recommendations) {
+                    console.error('❌ Recommendations container not found');
+                    return;
+                }
+                console.log('📝 Found recommendations container');
 
                 const marriageCoaching = analysis.marriage_coaching_analysis?.coaching_triggers;
                 const talkTrack = analysis.talk_track_improvements?.script_drilling_priorities;
