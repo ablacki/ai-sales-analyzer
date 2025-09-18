@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Sales Call Analyzer - Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            color: #7f8c8d;
+            font-size: 1.1rem;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+        }
+
+        .card h3 {
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 0.5rem;
+        }
+
+        .upload-area {
+            border: 3px dashed #3498db;
+            border-radius: 10px;
+            padding: 3rem 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: linear-gradient(45deg, #f8f9fa, #e9ecef);
+        }
+
+        .upload-area:hover {
+            border-color: #2980b9;
+            background: linear-gradient(45deg, #e9ecef, #dee2e6);
+            transform: scale(1.02);
+        }
+
+        .upload-area.dragover {
+            border-color: #27ae60;
+            background: linear-gradient(45deg, #d4edda, #c3e6cb);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: #3498db;
+            margin-bottom: 1rem;
+        }
+
+        .upload-text {
+            color: #5a6c7d;
+            font-size: 1.1rem;
+        }
+
+        .analysis-section {
+            display: none;
+            grid-column: 1 / -1;
+            margin-top: 2rem;
+        }
+
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .metric-card {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-label {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        .archetype-card {
+            background: linear-gradient(135deg, #11998e, #38ef7d);
+            color: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+        }
+
+        .archetype-name {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .archetype-description {
+            opacity: 0.9;
+            line-height: 1.4;
+        }
+
+        .big-five-chart {
+            background: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+        }
+
+        .personality-bar {
+            margin: 1rem 0;
+        }
+
+        .personality-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .bar-container {
+            background: #ecf0f1;
+            height: 20px;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .bar-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.8s ease;
+        }
+
+        .recommendations-section {
+            background: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+        }
+
+        .recommendation {
+            background: #f8f9fa;
+            border-left: 4px solid #3498db;
+            padding: 1rem;
+            margin: 0.5rem 0;
+            border-radius: 5px;
+        }
+
+        .recommendation h4 {
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 2s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 0.8rem 2rem;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            margin: 0.5rem;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .stat-item {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+            color: white;
+            padding: 1rem;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .error-message {
+            background: #e74c3c;
+            color: white;
+            padding: 1rem;
+            border-radius: 5px;
+            margin: 1rem 0;
+            display: none;
+        }
+
+        .success-message {
+            background: #27ae60;
+            color: white;
+            padding: 1rem;
+            border-radius: 5px;
+            margin: 1rem 0;
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .container {
+                padding: 0 1rem;
+            }
+
+            .header {
+                padding: 1rem;
+            }
+
+            .header h1 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>🧠 Enhanced Sales Call Analyzer</h1>
+        <p>AI-Powered Psychological Profiling for Marriage Coaching Sales</p>
+    </header>
+
+    <div class="container">
+        <div class="dashboard-grid">
+            <div class="card">
+                <h3>📁 Upload Transcript</h3>
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📄</div>
+                    <div class="upload-text">
+                        Drag and drop a transcript file here<br>
+                        or click to select a file
+                    </div>
+                </div>
+                <input type="file" id="fileInput" accept=".txt,.json" style="display: none;">
+
+                <div class="loading" id="loadingIndicator">
+                    <div class="spinner"></div>
+                    <p>Analyzing transcript with AI...</p>
+                    <small>This may take 30-60 seconds</small>
+                </div>
+
+                <div class="error-message" id="errorMessage"></div>
+                <div class="success-message" id="successMessage"></div>
+            </div>
+
+            <div class="card">
+                <h3>📊 Quick Stats</h3>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div style="font-size: 1.5rem; font-weight: bold;" id="totalAnalyzed">0</div>
+                        <div style="font-size: 0.9rem;">Total Analyzed</div>
+                    </div>
+                    <div class="stat-item">
+                        <div style="font-size: 1.5rem; font-weight: bold;" id="avgSalesScore">-</div>
+                        <div style="font-size: 0.9rem;">Avg Sales Score</div>
+                    </div>
+                    <div class="stat-item">
+                        <div style="font-size: 1.5rem; font-weight: bold;" id="topArchetype">-</div>
+                        <div style="font-size: 0.9rem;">Top Archetype</div>
+                    </div>
+                </div>
+
+                <button class="btn" onclick="loadBatchResults()">📈 Load Batch Results</button>
+                <button class="btn" onclick="exportResults()">📤 Export Data</button>
+            </div>
+
+            <div class="card">
+                <h3>🎯 Analysis Features</h3>
+                <ul style="line-height: 2; color: #5a6c7d;">
+                    <li>🧠 Big Five personality analysis</li>
+                    <li>🎭 5-archetype classification</li>
+                    <li>📞 Sales performance scoring</li>
+                    <li>💡 Coaching recommendations</li>
+                    <li>📊 Success probability calculation</li>
+                    <li>🎨 Emotional journey mapping</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="analysis-section" id="analysisResults">
+            <div class="analysis-grid">
+                <div class="metric-card">
+                    <div class="metric-value" id="salesScore">-</div>
+                    <div class="metric-label">Sales Performance Score</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-value" id="successProb">-%</div>
+                    <div class="metric-label">Success Probability</div>
+                </div>
+
+                <div class="archetype-card">
+                    <div class="archetype-name" id="archetypeName">-</div>
+                    <div class="archetype-description" id="archetypeDesc">Upload a transcript to see client archetype</div>
+                </div>
+
+                <div class="big-five-chart">
+                    <h4 style="margin-bottom: 1rem; color: #2c3e50;">Big Five Personality Profile</h4>
+                    <div class="personality-bar">
+                        <div class="personality-label">
+                            <span>Openness</span>
+                            <span id="opennessScore">-</span>
+                        </div>
+                        <div class="bar-container">
+                            <div class="bar-fill" id="opennessBar" style="background: #3498db; width: 0%;"></div>
+                        </div>
+                    </div>
+                    <div class="personality-bar">
+                        <div class="personality-label">
+                            <span>Conscientiousness</span>
+                            <span id="conscientiousnessScore">-</span>
+                        </div>
+                        <div class="bar-container">
+                            <div class="bar-fill" id="conscientiousnessBar" style="background: #2ecc71; width: 0%;"></div>
+                        </div>
+                    </div>
+                    <div class="personality-bar">
+                        <div class="personality-label">
+                            <span>Extraversion</span>
+                            <span id="extraversionScore">-</span>
+                        </div>
+                        <div class="bar-container">
+                            <div class="bar-fill" id="extraversionBar" style="background: #f39c12; width: 0%;"></div>
+                        </div>
+                    </div>
+                    <div class="personality-bar">
+                        <div class="personality-label">
+                            <span>Agreeableness</span>
+                            <span id="agreeablenessScore">-</span>
+                        </div>
+                        <div class="bar-container">
+                            <div class="bar-fill" id="agreeablenessBar" style="background: #e74c3c; width: 0%;"></div>
+                        </div>
+                    </div>
+                    <div class="personality-bar">
+                        <div class="personality-label">
+                            <span>Neuroticism</span>
+                            <span id="neuroticismScore">-</span>
+                        </div>
+                        <div class="bar-container">
+                            <div class="bar-fill" id="neuroticismBar" style="background: #9b59b6; width: 0%;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="recommendations-section">
+                    <h4 style="margin-bottom: 1rem; color: #2c3e50;">💡 Coaching Recommendations</h4>
+                    <div id="recommendationsContainer">
+                        <p style="color: #7f8c8d; text-align: center;">Upload and analyze a transcript to see personalized coaching recommendations</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class SalesCallDashboard {
+            constructor() {
+                this.initializeEventListeners();
+                this.loadStoredData();
+            }
+
+            initializeEventListeners() {
+                const uploadArea = document.getElementById('uploadArea');
+                const fileInput = document.getElementById('fileInput');
+
+                // File upload handling
+                uploadArea.addEventListener('click', () => fileInput.click());
+                uploadArea.addEventListener('dragover', this.handleDragOver.bind(this));
+                uploadArea.addEventListener('dragleave', this.handleDragLeave.bind(this));
+                uploadArea.addEventListener('drop', this.handleDrop.bind(this));
+                fileInput.addEventListener('change', this.handleFileSelect.bind(this));
+            }
+
+            handleDragOver(e) {
+                e.preventDefault();
+                document.getElementById('uploadArea').classList.add('dragover');
+            }
+
+            handleDragLeave(e) {
+                e.preventDefault();
+                document.getElementById('uploadArea').classList.remove('dragover');
+            }
+
+            handleDrop(e) {
+                e.preventDefault();
+                document.getElementById('uploadArea').classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    this.processFile(files[0]);
+                }
+            }
+
+            handleFileSelect(e) {
+                const files = e.target.files;
+                if (files.length > 0) {
+                    this.processFile(files[0]);
+                }
+            }
+
+            async processFile(file) {
+                try {
+                    this.showLoading(true);
+                    this.hideMessages();
+
+                    const content = await this.readFile(file);
+
+                    // Simulate AI analysis (in real implementation, this would call your Python backend)
+                    const analysis = await this.simulateAnalysis(content, file.name);
+
+                    this.displayResults(analysis);
+                    this.showSuccess('Analysis completed successfully!');
+
+                    // Store results
+                    this.storeAnalysis(analysis);
+                    this.updateStats();
+
+                } catch (error) {
+                    console.error('Analysis error:', error);
+                    this.showError('Analysis failed: ' + error.message);
+                } finally {
+                    this.showLoading(false);
+                }
+            }
+
+            readFile(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = e => resolve(e.target.result);
+                    reader.onerror = e => reject(new Error('Failed to read file'));
+                    reader.readAsText(file);
+                });
+            }
+
+            async simulateAnalysis(content, filename) {
+                // Simulate API call delay
+                await new Promise(resolve => setTimeout(resolve, 2000));
+
+                // Generate realistic mock data based on content analysis
+                const wordCount = content.split(' ').length;
+
+                return {
+                    transcript_id: filename,
+                    analysis_timestamp: new Date().toISOString(),
+                    status: 'success',
+                    word_count: wordCount,
+
+                    sales_performance: {
+                        overall_assessment: {
+                            performance_score: Math.floor(Math.random() * 30) + 65, // 65-95
+                            conversion_likelihood: Math.floor(Math.random() * 40) + 45,
+                            key_strengths: ["Strong rapport building", "Excellent listening skills", "Clear value proposition"],
+                            critical_improvements: ["Ask more discovery questions", "Handle objections more confidently", "Create stronger urgency"]
+                        },
+                        sales_skills_breakdown: {
+                            opening_and_rapport: { score: Math.floor(Math.random() * 3) + 7, feedback: "Good connection established early" },
+                            discovery_and_questioning: { score: Math.floor(Math.random() * 3) + 6, feedback: "Could ask deeper questions" },
+                            presentation_skills: { score: Math.floor(Math.random() * 3) + 7, feedback: "Clear presentation of benefits" },
+                            objection_handling: { score: Math.floor(Math.random() * 3) + 6, feedback: "Room for improvement in addressing concerns" },
+                            closing_techniques: { score: Math.floor(Math.random() * 3) + 6, feedback: "Could be more assumptive in closing" }
+                        }
+                    },
+
+                    psychological_profile: {
+                        big_five_personality: {
+                            openness: { score: Math.floor(Math.random() * 40) + 40, confidence: 85 },
+                            conscientiousness: { score: Math.floor(Math.random() * 40) + 40, confidence: 80 },
+                            extraversion: { score: Math.floor(Math.random() * 40) + 30, confidence: 75 },
+                            agreeableness: { score: Math.floor(Math.random() * 30) + 60, confidence: 85 },
+                            neuroticism: { score: Math.floor(Math.random() * 50) + 25, confidence: 80 }
+                        }
+                    },
+
+                    archetype_analysis: {
+                        primary_archetype: this.getRandomArchetype(),
+                        confidence_score: Math.random() * 0.3 + 0.7, // 0.7-1.0
+                        secondary_archetype: "Hopeful Builder"
+                    },
+
+                    coaching_recommendations: {
+                        immediate_action_plan: {
+                            top_3_priorities: [
+                                "Follow up within 24 hours with personalized email",
+                                "Address the pricing concerns with value demonstration",
+                                "Send testimonials from similar client situations"
+                            ],
+                            follow_up_timing: "1-2 days",
+                            follow_up_method: "email",
+                            key_message_focus: "value demonstration"
+                        },
+                        communication_strategy: {
+                            tone_adjustments: "Use more empathetic language and validation",
+                            emotional_approach: "empathetic",
+                            language_adaptations: ["That makes complete sense...", "I understand your concern...", "Many clients in similar situations..."]
+                        }
+                    },
+
+                    success_probability: Math.random() * 0.3 + 0.5 // 0.5-0.8
+                };
+            }
+
+            getRandomArchetype() {
+                const archetypes = [
+                    "Analytical Researcher",
+                    "Desperate Saver",
+                    "Hopeful Builder",
+                    "Skeptical Evaluator",
+                    "Consensus Seeker"
+                ];
+                return archetypes[Math.floor(Math.random() * archetypes.length)];
+            }
+
+            displayResults(analysis) {
+                // Show analysis section
+                document.getElementById('analysisResults').style.display = 'block';
+
+                // Update metrics
+                const salesScore = analysis.sales_performance.overall_assessment.performance_score;
+                const successProb = analysis.success_probability;
+
+                document.getElementById('salesScore').textContent = salesScore;
+                document.getElementById('successProb').textContent = Math.round(successProb * 100) + '%';
+
+                // Update archetype
+                const archetype = analysis.archetype_analysis.primary_archetype;
+                document.getElementById('archetypeName').textContent = archetype;
+                document.getElementById('archetypeDesc').textContent = this.getArchetypeDescription(archetype);
+
+                // Update Big Five personality chart
+                this.updatePersonalityChart(analysis.psychological_profile.big_five_personality);
+
+                // Update recommendations
+                this.updateRecommendations(analysis.coaching_recommendations);
+
+                // Scroll to results
+                document.getElementById('analysisResults').scrollIntoView({ behavior: 'smooth' });
+            }
+
+            updatePersonalityChart(bigFive) {
+                const traits = ['openness', 'conscientiousness', 'extraversion', 'agreeableness', 'neuroticism'];
+
+                traits.forEach(trait => {
+                    const score = bigFive[trait]?.score || 50;
+                    const scoreElement = document.getElementById(trait + 'Score');
+                    const barElement = document.getElementById(trait + 'Bar');
+
+                    if (scoreElement && barElement) {
+                        scoreElement.textContent = score;
+
+                        // Animate bar fill
+                        setTimeout(() => {
+                            barElement.style.width = score + '%';
+                        }, 100);
+                    }
+                });
+            }
+
+            updateRecommendations(recommendations) {
+                const container = document.getElementById('recommendationsContainer');
+
+                let html = '';
+
+                if (recommendations.immediate_action_plan?.top_3_priorities) {
+                    html += '<div class="recommendation">';
+                    html += '<h4>🎯 Immediate Actions</h4>';
+                    html += '<ul>';
+                    recommendations.immediate_action_plan.top_3_priorities.forEach(action => {
+                        html += `<li>${action}</li>`;
+                    });
+                    html += '</ul>';
+                    html += '</div>';
+                }
+
+                if (recommendations.communication_strategy?.tone_adjustments) {
+                    html += '<div class="recommendation">';
+                    html += '<h4>💬 Communication Strategy</h4>';
+                    html += `<p><strong>Tone:</strong> ${recommendations.communication_strategy.tone_adjustments}</p>`;
+                    html += `<p><strong>Approach:</strong> ${recommendations.communication_strategy.emotional_approach}</p>`;
+                    html += '</div>';
+                }
+
+                if (recommendations.communication_strategy?.language_adaptations) {
+                    html += '<div class="recommendation">';
+                    html += '<h4>🗣️ Key Phrases to Use</h4>';
+                    html += '<ul>';
+                    recommendations.communication_strategy.language_adaptations.forEach(phrase => {
+                        html += `<li>"${phrase}"</li>`;
+                    });
+                    html += '</ul>';
+                    html += '</div>';
+                }
+
+                container.innerHTML = html || '<p style="color: #7f8c8d; text-align: center;">No recommendations available</p>';
+            }
+
+            getArchetypeDescription(archetype) {
+                const descriptions = {
+                    "Analytical Researcher": "Data-driven client who needs facts, statistics, and logical arguments to make decisions.",
+                    "Desperate Saver": "High-urgency client facing relationship crisis, emotional and needs immediate hope.",
+                    "Hopeful Builder": "Optimistic, growth-focused client looking to build a better future together.",
+                    "Skeptical Evaluator": "Cautious client who needs proof, guarantees, and testimonials before committing.",
+                    "Consensus Seeker": "Collaborative client who needs to involve partner/family in decision-making process."
+                };
+                return descriptions[archetype] || "Mixed profile with characteristics from multiple archetypes.";
+            }
+
+            showLoading(show) {
+                document.getElementById('loadingIndicator').style.display = show ? 'block' : 'none';
+                document.getElementById('uploadArea').style.display = show ? 'none' : 'block';
+            }
+
+            showError(message) {
+                const errorDiv = document.getElementById('errorMessage');
+                errorDiv.textContent = message;
+                errorDiv.style.display = 'block';
+                setTimeout(() => errorDiv.style.display = 'none', 5000);
+            }
+
+            showSuccess(message) {
+                const successDiv = document.getElementById('successMessage');
+                successDiv.textContent = message;
+                successDiv.style.display = 'block';
+                setTimeout(() => successDiv.style.display = 'none', 3000);
+            }
+
+            hideMessages() {
+                document.getElementById('errorMessage').style.display = 'none';
+                document.getElementById('successMessage').style.display = 'none';
+            }
+
+            storeAnalysis(analysis) {
+                let stored = JSON.parse(localStorage.getItem('salesAnalyses') || '[]');
+                stored.push({
+                    ...analysis,
+                    stored_at: new Date().toISOString()
+                });
+
+                // Keep only last 50 analyses
+                if (stored.length > 50) {
+                    stored = stored.slice(-50);
+                }
+
+                localStorage.setItem('salesAnalyses', JSON.stringify(stored));
+            }
+
+            loadStoredData() {
+                const stored = JSON.parse(localStorage.getItem('salesAnalyses') || '[]');
+                this.updateStatsFromData(stored);
+            }
+
+            updateStats() {
+                const stored = JSON.parse(localStorage.getItem('salesAnalyses') || '[]');
+                this.updateStatsFromData(stored);
+            }
+
+            updateStatsFromData(analyses) {
+                document.getElementById('totalAnalyzed').textContent = analyses.length;
+
+                if (analyses.length > 0) {
+                    // Calculate average sales score
+                    const avgScore = analyses.reduce((sum, a) =>
+                        sum + (a.sales_performance?.overall_assessment?.performance_score || 0), 0
+                    ) / analyses.length;
+                    document.getElementById('avgSalesScore').textContent = Math.round(avgScore);
+
+                    // Find most common archetype
+                    const archetypeCounts = {};
+                    analyses.forEach(a => {
+                        const archetype = a.archetype_analysis?.primary_archetype;
+                        if (archetype) {
+                            archetypeCounts[archetype] = (archetypeCounts[archetype] || 0) + 1;
+                        }
+                    });
+
+                    const topArchetype = Object.keys(archetypeCounts).reduce((a, b) =>
+                        archetypeCounts[a] > archetypeCounts[b] ? a : b, 'None'
+                    );
+
+                    document.getElementById('topArchetype').textContent =
+                        topArchetype === 'None' ? 'None' : topArchetype.split(' ')[0];
+                }
+            }
+        }
+
+        // Global functions for buttons
+        function loadBatchResults() {
+            alert('Batch results loading would integrate with your Python backend to load database results.');
+        }
+
+        function exportResults() {
+            const stored = JSON.parse(localStorage.getItem('salesAnalyses') || '[]');
+            if (stored.length === 0) {
+                alert('No analyses to export. Analyze some transcripts first!');
+                return;
+            }
+
+            const dataStr = JSON.stringify(stored, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(dataBlob);
+            link.download = `sales_analysis_export_${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+        }
+
+        // Initialize dashboard when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new SalesCallDashboard();
+        });
+    </script>
+</body>
+</html>
