@@ -380,97 +380,85 @@ class ServerlessAnalyzer:
         }
 
 # Vercel serverless function handler
-def handler(request):
-    """Main Vercel serverless function entry point"""
+from http.server import BaseHTTPRequestHandler
+import urllib.parse
 
-    # Handle CORS for browser requests
-    if request.method == 'OPTIONS':
-        return {
-            'statusCode': 200,
-            'headers': {
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'POST, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type',
-            },
-            'body': ''
-        }
+class handler(BaseHTTPRequestHandler):
+    def do_OPTIONS(self):
+        """Handle CORS preflight requests"""
+        self.send_response(200)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        self.end_headers()
 
-    # Only allow POST requests
-    if request.method != 'POST':
-        return {
-            'statusCode': 405,
-            'headers': {'Access-Control-Allow-Origin': '*'},
-            'body': json.dumps({'error': 'Method not allowed'})
-        }
-
-    try:
-        # Get API key from environment
-        api_key = os.environ.get('ANTHROPIC_API_KEY')
-        if not api_key:
-            return {
-                'statusCode': 500,
-                'headers': {'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({
-                    'error': 'API key not configured',
-                    'message': 'Please set ANTHROPIC_API_KEY environment variable'
-                })
-            }
-
-        # Parse request body
+    def do_POST(self):
+        """Handle POST requests for AI analysis"""
         try:
-            body = json.loads(request.body)
-        except json.JSONDecodeError:
-            return {
-                'statusCode': 400,
-                'headers': {'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'error': 'Invalid JSON in request body'})
-            }
+            # Get API key from environment
+            api_key = os.environ.get('ANTHROPIC_API_KEY')
+            if not api_key:
+                self.send_error_response(500, {
+                    'error': 'API key not configured',
+                    'message': 'Please set ANTHROPIC_API_KEY environment variable in Vercel'
+                })
+                return
 
-        # Validate required fields
-        if 'content' not in body:
-            return {
-                'statusCode': 400,
-                'headers': {'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'error': 'Missing required field: content'})
-            }
+            # Read request body
+            content_length = int(self.headers.get('Content-Length', 0))
+            if content_length == 0:
+                self.send_error_response(400, {'error': 'Empty request body'})
+                return
 
-        content = body['content']
-        filename = body.get('filename', 'transcript.txt')
+            post_data = self.rfile.read(content_length)
 
-        # Validate content
-        if not content or len(content.strip()) < 100:
-            return {
-                'statusCode': 400,
-                'headers': {'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'error': 'Content too short. Please provide at least 100 characters of transcript content.'})
-            }
+            # Parse JSON
+            try:
+                body = json.loads(post_data.decode('utf-8'))
+            except json.JSONDecodeError:
+                self.send_error_response(400, {'error': 'Invalid JSON in request body'})
+                return
 
-        # Initialize analyzer
-        analyzer = ServerlessAnalyzer(api_key)
+            # Validate required fields
+            if 'content' not in body:
+                self.send_error_response(400, {'error': 'Missing required field: content'})
+                return
 
-        # Run analysis
-        result = asyncio.run(analyzer.analyze_transcript_content(content, filename))
+            content = body['content']
+            filename = body.get('filename', 'transcript.txt')
 
-        # Return results
-        return {
-            'statusCode': 200,
-            'headers': {
-                'Access-Control-Allow-Origin': '*',
-                'Content-Type': 'application/json',
-            },
-            'body': json.dumps(result)
-        }
+            # Validate content
+            if not content or len(content.strip()) < 100:
+                self.send_error_response(400, {
+                    'error': 'Content too short. Please provide at least 100 characters of transcript content.'
+                })
+                return
 
-    except Exception as e:
-        logger.error(f"Serverless function error: {str(e)}")
-        return {
-            'statusCode': 500,
-            'headers': {'Access-Control-Allow-Origin': '*'},
-            'body': json.dumps({
+            # Initialize analyzer and run analysis
+            analyzer = ServerlessAnalyzer(api_key)
+            result = asyncio.run(analyzer.analyze_transcript_content(content, filename))
+
+            # Send success response
+            self.send_response(200)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps(result).encode('utf-8'))
+
+        except Exception as e:
+            logger.error(f"Serverless function error: {str(e)}")
+            self.send_error_response(500, {
                 'error': 'Internal server error',
                 'message': str(e)
             })
-        }
+
+    def send_error_response(self, status_code, error_data):
+        """Send error response with CORS headers"""
+        self.send_response(status_code)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Content-Type', 'application/json')
+        self.end_headers()
+        self.wfile.write(json.dumps(error_data).encode('utf-8'))
 
 # For local testing
 if __name__ == "__main__":
