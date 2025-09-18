@@ -1,11 +1,5 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "index.html",
-      "use": "@vercel/static"
-    }
-  ],
   "routes": [
     {
       "src": "/",
@@ -19,13 +13,5 @@
       "src": "/(.*)",
       "dest": "/index.html"
     }
-  ],
-  "functions": {
-    "enhanced_analyzer.py": {
-      "runtime": "python3.9"
-    },
-    "run_enhanced_analysis.py": {
-      "runtime": "python3.9"
-    }
-  }
+  ]
 }
