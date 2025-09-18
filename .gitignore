@@ -85,3 +85,4 @@ backup_*/
 *.temp
 temp/
 .vercel
+*.rtf
