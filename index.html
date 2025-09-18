@@ -295,7 +295,7 @@
 <body>
     <header class="header">
         <h1>🧠 Enhanced Sales Call Analyzer</h1>
-        <p>AI-Powered Psychological Profiling for Marriage Coaching Sales</p>
+        <p>Real AI-Powered Psychological Profiling with Anthropic Claude • Production Ready</p>
     </header>
 
     <div class="container">
@@ -313,8 +313,8 @@
 
                 <div class="loading" id="loadingIndicator">
                     <div class="spinner"></div>
-                    <p>Analyzing transcript with AI...</p>
-                    <small>This may take 30-60 seconds</small>
+                    <p>🧠 Analyzing transcript with Anthropic Claude AI...</p>
+                    <small>Performing real psychological profiling and sales analysis...<br>This may take 30-90 seconds</small>
                 </div>
 
                 <div class="error-message" id="errorMessage"></div>
@@ -483,8 +483,8 @@
 
                     const content = await this.readFile(file);
 
-                    // Simulate AI analysis (in real implementation, this would call your Python backend)
-                    const analysis = await this.simulateAnalysis(content, file.name);
+                    // Perform real AI analysis using Anthropic Claude
+                    const analysis = await this.performRealAnalysis(content, file.name);
 
                     this.displayResults(analysis);
                     this.showSuccess('Analysis completed successfully!');
@@ -510,71 +510,45 @@
                 });
             }
 
-            async simulateAnalysis(content, filename) {
-                // Simulate API call delay
-                await new Promise(resolve => setTimeout(resolve, 2000));
-
-                // Generate realistic mock data based on content analysis
-                const wordCount = content.split(' ').length;
-
-                return {
-                    transcript_id: filename,
-                    analysis_timestamp: new Date().toISOString(),
-                    status: 'success',
-                    word_count: wordCount,
-
-                    sales_performance: {
-                        overall_assessment: {
-                            performance_score: Math.floor(Math.random() * 30) + 65, // 65-95
-                            conversion_likelihood: Math.floor(Math.random() * 40) + 45,
-                            key_strengths: ["Strong rapport building", "Excellent listening skills", "Clear value proposition"],
-                            critical_improvements: ["Ask more discovery questions", "Handle objections more confidently", "Create stronger urgency"]
+            async performRealAnalysis(content, filename) {
+                // Call the real Vercel API endpoint
+                try {
+                    const response = await fetch('/api/analyze', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
                         },
-                        sales_skills_breakdown: {
-                            opening_and_rapport: { score: Math.floor(Math.random() * 3) + 7, feedback: "Good connection established early" },
-                            discovery_and_questioning: { score: Math.floor(Math.random() * 3) + 6, feedback: "Could ask deeper questions" },
-                            presentation_skills: { score: Math.floor(Math.random() * 3) + 7, feedback: "Clear presentation of benefits" },
-                            objection_handling: { score: Math.floor(Math.random() * 3) + 6, feedback: "Room for improvement in addressing concerns" },
-                            closing_techniques: { score: Math.floor(Math.random() * 3) + 6, feedback: "Could be more assumptive in closing" }
-                        }
-                    },
+                        body: JSON.stringify({
+                            content: content,
+                            filename: filename
+                        })
+                    });
 
-                    psychological_profile: {
-                        big_five_personality: {
-                            openness: { score: Math.floor(Math.random() * 40) + 40, confidence: 85 },
-                            conscientiousness: { score: Math.floor(Math.random() * 40) + 40, confidence: 80 },
-                            extraversion: { score: Math.floor(Math.random() * 40) + 30, confidence: 75 },
-                            agreeableness: { score: Math.floor(Math.random() * 30) + 60, confidence: 85 },
-                            neuroticism: { score: Math.floor(Math.random() * 50) + 25, confidence: 80 }
-                        }
-                    },
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+                    }
 
-                    archetype_analysis: {
-                        primary_archetype: this.getRandomArchetype(),
-                        confidence_score: Math.random() * 0.3 + 0.7, // 0.7-1.0
-                        secondary_archetype: "Hopeful Builder"
-                    },
+                    const analysis = await response.json();
 
-                    coaching_recommendations: {
-                        immediate_action_plan: {
-                            top_3_priorities: [
-                                "Follow up within 24 hours with personalized email",
-                                "Address the pricing concerns with value demonstration",
-                                "Send testimonials from similar client situations"
-                            ],
-                            follow_up_timing: "1-2 days",
-                            follow_up_method: "email",
-                            key_message_focus: "value demonstration"
-                        },
-                        communication_strategy: {
-                            tone_adjustments: "Use more empathetic language and validation",
-                            emotional_approach: "empathetic",
-                            language_adaptations: ["That makes complete sense...", "I understand your concern...", "Many clients in similar situations..."]
-                        }
-                    },
+                    if (analysis.status === 'error') {
+                        throw new Error(analysis.error || 'Analysis failed');
+                    }
 
-                    success_probability: Math.random() * 0.3 + 0.5 // 0.5-0.8
-                };
+                    return analysis;
+
+                } catch (error) {
+                    console.error('Real analysis failed:', error);
+
+                    // Show specific error to user
+                    if (error.message.includes('API key')) {
+                        throw new Error('API configuration error. Please check that the ANTHROPIC_API_KEY is set in your Vercel environment variables.');
+                    } else if (error.message.includes('Content too short')) {
+                        throw new Error('Transcript too short. Please provide at least 100 characters of meaningful conversation content.');
+                    } else {
+                        throw new Error(`Analysis failed: ${error.message}`);
+                    }
+                }
             }
 
             getRandomArchetype() {
