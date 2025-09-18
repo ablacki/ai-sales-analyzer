@@ -512,7 +512,13 @@
 
             async performRealAnalysis(content, filename) {
                 // Call the real Vercel API endpoint
+                console.log('🔍 Starting real AI analysis...');
+                console.log('Content length:', content.length);
+                console.log('Filename:', filename);
+
                 try {
+                    console.log('📡 Making API call to /api/analyze');
+
                     const response = await fetch('/api/analyze', {
                         method: 'POST',
                         headers: {
@@ -524,21 +530,58 @@
                         })
                     });
 
+                    console.log('📊 API Response status:', response.status);
+                    console.log('📊 API Response headers:', [...response.headers.entries()]);
+
                     if (!response.ok) {
-                        const errorData = await response.json();
+                        const errorText = await response.text();
+                        console.error('❌ API Error Response:', errorText);
+
+                        let errorData;
+                        try {
+                            errorData = JSON.parse(errorText);
+                        } catch (e) {
+                            throw new Error(`HTTP ${response.status}: ${errorText}`);
+                        }
+
                         throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
                     }
 
-                    const analysis = await response.json();
+                    const analysisText = await response.text();
+                    console.log('📄 Raw API Response:', analysisText.substring(0, 500) + '...');
+
+                    let analysis;
+                    try {
+                        analysis = JSON.parse(analysisText);
+                    } catch (e) {
+                        console.error('❌ JSON Parse Error:', e);
+                        throw new Error('Invalid JSON response from API');
+                    }
 
                     if (analysis.status === 'error') {
+                        console.error('❌ Analysis returned error:', analysis.error);
                         throw new Error(analysis.error || 'Analysis failed');
                     }
 
+                    // Check if this looks like real AI data or fallback data
+                    const coaching = analysis.coaching_recommendations?.immediate_action_plan?.top_3_priorities;
+                    const hasMockData = coaching && coaching.some(item =>
+                        item.includes('Follow up within 24 hours with personalized email') ||
+                        item.includes('Address the pricing concerns with value demonstration')
+                    );
+
+                    if (hasMockData) {
+                        console.warn('⚠️ WARNING: Response contains mock/fallback data patterns!');
+                        console.log('Coaching recommendations:', coaching);
+                    } else {
+                        console.log('✅ Response appears to contain real AI analysis');
+                    }
+
+                    console.log('🎯 Analysis completed successfully');
                     return analysis;
 
                 } catch (error) {
-                    console.error('Real analysis failed:', error);
+                    console.error('💥 Real analysis failed:', error);
 
                     // Show specific error to user
                     if (error.message.includes('API key')) {

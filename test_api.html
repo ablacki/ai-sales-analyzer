@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Test</title>
+</head>
+<body>
+    <h1>Test Real AI Analysis API</h1>
+    <textarea id="testContent" placeholder="Paste transcript content here..." style="width: 100%; height: 200px;">
+Sales Rep: Hi John, thanks for scheduling this consultation about your marriage.
+
+John: Yeah, we've been having some real problems lately. My wife and I just can't seem to communicate anymore. Every conversation turns into an argument. She thinks I don't listen to her, and honestly, maybe she's right. I just don't know how to fix it anymore. We've tried talking about it ourselves, but it just makes things worse. It's been going on for about six months now, and I'm really desperate to save our relationship.
+
+Sales Rep: I understand that must be really frustrating. Can you tell me more about what specific communication challenges you're facing?
+
+John: Well, like I said, every conversation becomes a fight. I try to explain my perspective but she gets defensive immediately. And then I get defensive too. It's like we're speaking different languages. I love her so much, but I'm scared we're going to lose each other if we can't figure this out.
+    </textarea><br><br>
+    <button onclick="testAPI()">Test Real API Analysis</button>
+    <br><br>
+    <div id="results" style="white-space: pre-wrap; font-family: monospace; border: 1px solid #ccc; padding: 10px; margin-top: 10px;"></div>
+
+    <script>
+        async function testAPI() {
+            const content = document.getElementById('testContent').value;
+            const resultsDiv = document.getElementById('results');
+
+            resultsDiv.innerHTML = 'Testing API...\n';
+
+            try {
+                console.log('Making API call to /api/analyze...');
+
+                const response = await fetch('/api/analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        content: content,
+                        filename: 'test_transcript.txt'
+                    })
+                });
+
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers);
+
+                const responseText = await response.text();
+                console.log('Raw response:', responseText);
+
+                resultsDiv.innerHTML = `Response Status: ${response.status}\n\n`;
+                resultsDiv.innerHTML += `Raw Response:\n${responseText}\n\n`;
+
+                if (response.ok) {
+                    try {
+                        const data = JSON.parse(responseText);
+                        resultsDiv.innerHTML += `Parsed JSON:\n${JSON.stringify(data, null, 2)}`;
+
+                        // Check if it's real AI data or mock data
+                        const archetype = data.archetype_analysis?.primary_archetype;
+                        const coaching = data.coaching_recommendations?.immediate_action_plan?.top_3_priorities;
+
+                        resultsDiv.innerHTML += `\n\n=== ANALYSIS ===\n`;
+                        resultsDiv.innerHTML += `Archetype: ${archetype}\n`;
+                        resultsDiv.innerHTML += `Coaching: ${coaching ? coaching.join(', ') : 'None'}\n`;
+
+                        if (coaching && coaching.includes("Follow up within 24 hours with personalized email")) {
+                            resultsDiv.innerHTML += `\n⚠️ WARNING: This looks like MOCK DATA, not real AI analysis!\n`;
+                        } else {
+                            resultsDiv.innerHTML += `\n✅ This appears to be REAL AI analysis!\n`;
+                        }
+
+                    } catch (e) {
+                        resultsDiv.innerHTML += `JSON Parse Error: ${e.message}`;
+                    }
+                } else {
+                    resultsDiv.innerHTML += `Error: ${response.status} - ${responseText}`;
+                }
+
+            } catch (error) {
+                console.error('API test failed:', error);
+                resultsDiv.innerHTML += `Network Error: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>
