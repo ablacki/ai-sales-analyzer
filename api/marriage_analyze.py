@@ -430,38 +430,70 @@ Respond with ONLY valid JSON matching this format."""
 
         content_lower = content.lower()
 
-        # Determine dominant emotion based on keywords
-        if any(word in content_lower for word in ['desperate', 'urgent', 'crisis', 'falling apart']):
-            dominant_emotion = "desperate"
+        # Count emotional keywords with logging
+        emotional_scores = {
+            'desperate': 0,
+            'hopeful': 0,
+            'skeptical': 0,
+            'mixed': 0
+        }
+
+        desperate_emotions = ['desperate', 'urgent', 'crisis', 'falling apart', 'panicking', 'emergency']
+        for keyword in desperate_emotions:
+            if keyword in content_lower:
+                emotional_scores['desperate'] += 1
+                logger.info(f"Found DESPERATE emotion keyword: '{keyword}'")
+
+        hopeful_emotions = ['hopeful', 'excited', 'positive', 'optimistic', 'looking forward', 'can help']
+        for keyword in hopeful_emotions:
+            if keyword in content_lower:
+                emotional_scores['hopeful'] += 1
+                logger.info(f"Found HOPEFUL emotion keyword: '{keyword}'")
+
+        skeptical_emotions = ['skeptical', 'doubt', 'suspicious', 'cautious', 'not sure', 'worried']
+        for keyword in skeptical_emotions:
+            if keyword in content_lower:
+                emotional_scores['skeptical'] += 1
+                logger.info(f"Found SKEPTICAL emotion keyword: '{keyword}'")
+
+        # Determine dominant emotion
+        max_emotion_score = max(emotional_scores.values())
+        if max_emotion_score == 0:
+            dominant_emotion = "mixed"
+            logger.info("No emotional keywords found, defaulting to mixed")
+        else:
+            dominant_emotion = max(emotional_scores, key=emotional_scores.get)
+            logger.info(f"Emotional scores: {emotional_scores}")
+            logger.info(f"Selected dominant emotion: {dominant_emotion} with score {max_emotion_score}")
+
+        # Generate phases based on dominant emotion
+        if dominant_emotion == "desperate":
             phases = [
-                {"phase": "opening", "emotional_state": "panicked", "intensity": 9},
-                {"phase": "discovery", "emotional_state": "vulnerable", "intensity": 8},
-                {"phase": "presentation", "emotional_state": "hopeful", "intensity": 7},
-                {"phase": "closing", "emotional_state": "motivated", "intensity": 8}
+                {"phase": "opening", "emotional_state": "panicked", "intensity": 9, "trigger_moment": "Expressed urgency"},
+                {"phase": "discovery", "emotional_state": "vulnerable", "intensity": 8, "trigger_moment": "Shared relationship struggles"},
+                {"phase": "presentation", "emotional_state": "hopeful", "intensity": 7, "trigger_moment": "Heard solution possibilities"},
+                {"phase": "closing", "emotional_state": "motivated", "intensity": 8, "trigger_moment": "Ready to take action"}
             ]
-        elif any(word in content_lower for word in ['hopeful', 'excited', 'positive', 'optimistic']):
-            dominant_emotion = "hopeful"
+        elif dominant_emotion == "hopeful":
             phases = [
-                {"phase": "opening", "emotional_state": "optimistic", "intensity": 7},
-                {"phase": "discovery", "emotional_state": "engaged", "intensity": 8},
-                {"phase": "presentation", "emotional_state": "excited", "intensity": 8},
-                {"phase": "closing", "emotional_state": "motivated", "intensity": 9}
+                {"phase": "opening", "emotional_state": "optimistic", "intensity": 7, "trigger_moment": "Positive about change"},
+                {"phase": "discovery", "emotional_state": "engaged", "intensity": 8, "trigger_moment": "Actively participating"},
+                {"phase": "presentation", "emotional_state": "excited", "intensity": 8, "trigger_moment": "Seeing potential"},
+                {"phase": "closing", "emotional_state": "motivated", "intensity": 9, "trigger_moment": "Eager to begin"}
             ]
-        elif any(word in content_lower for word in ['skeptical', 'doubt', 'suspicious', 'cautious']):
-            dominant_emotion = "skeptical"
+        elif dominant_emotion == "skeptical":
             phases = [
-                {"phase": "opening", "emotional_state": "guarded", "intensity": 6},
-                {"phase": "discovery", "emotional_state": "skeptical", "intensity": 7},
-                {"phase": "presentation", "emotional_state": "analytical", "intensity": 6},
-                {"phase": "closing", "emotional_state": "cautious", "intensity": 5}
+                {"phase": "opening", "emotional_state": "guarded", "intensity": 6, "trigger_moment": "Initial hesitation"},
+                {"phase": "discovery", "emotional_state": "skeptical", "intensity": 7, "trigger_moment": "Questioning approach"},
+                {"phase": "presentation", "emotional_state": "analytical", "intensity": 6, "trigger_moment": "Evaluating credibility"},
+                {"phase": "closing", "emotional_state": "cautious", "intensity": 5, "trigger_moment": "Still uncertain"}
             ]
         else:
-            dominant_emotion = "mixed"
             phases = [
-                {"phase": "opening", "emotional_state": "curious", "intensity": 6},
-                {"phase": "discovery", "emotional_state": "concerned", "intensity": 7},
-                {"phase": "presentation", "emotional_state": "interested", "intensity": 7},
-                {"phase": "closing", "emotional_state": "thoughtful", "intensity": 6}
+                {"phase": "opening", "emotional_state": "curious", "intensity": 6, "trigger_moment": "Learning about process"},
+                {"phase": "discovery", "emotional_state": "concerned", "intensity": 7, "trigger_moment": "Discussing challenges"},
+                {"phase": "presentation", "emotional_state": "interested", "intensity": 7, "trigger_moment": "Considering options"},
+                {"phase": "closing", "emotional_state": "thoughtful", "intensity": 6, "trigger_moment": "Weighing decision"}
             ]
 
         result = {
@@ -484,17 +516,55 @@ Respond with ONLY valid JSON matching this format."""
 
         content_lower = content.lower()
 
-        # Simple keyword-based classification
-        if any(word in content_lower for word in ['urgent', 'running out', 'desperate', 'crisis', 'emergency', 'last chance']):
-            archetype = 'DESPERATE SAVER'
-        elif any(word in content_lower for word in ['data', 'statistics', 'research', 'success rate', 'proof', 'evidence']):
-            archetype = 'ANALYTICAL RESEARCHER'
-        elif any(word in content_lower for word in ['scam', 'too good', 'burned before', 'suspicious', 'trust']):
-            archetype = 'SKEPTICAL EVALUATOR'
-        elif any(word in content_lower for word in ['spouse', 'partner', 'discuss', 'we need to', 'talk to them']):
-            archetype = 'CONSENSUS SEEKER'
+        # More specific keyword matching with logging
+        archetype_scores = {
+            'DESPERATE SAVER': 0,
+            'ANALYTICAL RESEARCHER': 0,
+            'SKEPTICAL EVALUATOR': 0,
+            'CONSENSUS SEEKER': 0,
+            'HOPEFUL BUILDER': 0
+        }
+
+        # Count matches for each archetype
+        desperate_keywords = ['urgent', 'running out of time', 'desperate', 'crisis', 'emergency', 'last chance', 'falling apart']
+        for keyword in desperate_keywords:
+            if keyword in content_lower:
+                archetype_scores['DESPERATE SAVER'] += 1
+                logger.info(f"Found DESPERATE keyword: '{keyword}'")
+
+        analytical_keywords = ['statistics', 'success rate', 'research shows', 'data', 'proof', 'evidence', 'numbers']
+        for keyword in analytical_keywords:
+            if keyword in content_lower:
+                archetype_scores['ANALYTICAL RESEARCHER'] += 1
+                logger.info(f"Found ANALYTICAL keyword: '{keyword}'")
+
+        skeptical_keywords = ['scam', 'too good to be true', 'burned before', 'suspicious', 'dont trust']
+        for keyword in skeptical_keywords:
+            if keyword in content_lower:
+                archetype_scores['SKEPTICAL EVALUATOR'] += 1
+                logger.info(f"Found SKEPTICAL keyword: '{keyword}'")
+
+        consensus_keywords = ['my spouse', 'my partner', 'we need to discuss', 'talk to my wife', 'talk to my husband']
+        for keyword in consensus_keywords:
+            if keyword in content_lower:
+                archetype_scores['CONSENSUS SEEKER'] += 1
+                logger.info(f"Found CONSENSUS keyword: '{keyword}'")
+
+        hopeful_keywords = ['excited', 'hopeful', 'looking forward', 'improve our relationship', 'build together']
+        for keyword in hopeful_keywords:
+            if keyword in content_lower:
+                archetype_scores['HOPEFUL BUILDER'] += 1
+                logger.info(f"Found HOPEFUL keyword: '{keyword}'")
+
+        # Find highest scoring archetype
+        max_score = max(archetype_scores.values())
+        if max_score == 0:
+            archetype = 'HOPEFUL BUILDER'  # Default
+            logger.info("No keywords matched, defaulting to HOPEFUL BUILDER")
         else:
-            archetype = 'HOPEFUL BUILDER'
+            archetype = max(archetype_scores, key=archetype_scores.get)
+            logger.info(f"Archetype scores: {archetype_scores}")
+            logger.info(f"Selected archetype: {archetype} with score {max_score}")
 
         result = {
             "primary_archetype": archetype,
