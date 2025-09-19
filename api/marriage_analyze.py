@@ -487,47 +487,24 @@ Return JSON:
             logger.error(f"API test failed: {str(e)}")
             return self.get_fallback_archetype()
 
-        # Truncate content if too long
-        content_preview = content[:3000] if len(content) > 3000 else content
+        # Truncate content if too long to prevent API timeouts
+        content_preview = content[:2000] if len(content) > 2000 else content
+        logger.info(f"Using content preview of {len(content_preview)} chars from {len(content)} total")
 
-        prompt = f"""You are an expert in behavioral psychology, sales psychology, conversation linguistics, and relationship crisis coaching. Analyze this marriage coaching sales call transcript to identify the prospect's psychological archetype.
+        prompt = f"""Classify this marriage coaching prospect's archetype based on their language:
 
-TRANSCRIPT: {content_preview}
+{content_preview}
 
-EVIDENCE-BASED ARCHETYPES (based on Jungian psychology + relationship crisis behavioral patterns):
+Choose the best match:
 
-1. ANALYTICAL RESEARCHER
-- Psychological markers: High conscientiousness, methodical processing, seeks data/proof
-- Language patterns: "statistics", "success rates", "research shows", "I need to understand"
-- Decision-making: Logical, systematic, comparison-focused
-- Crisis response: Intellectualizes emotions, seeks evidence-based solutions
+ANALYTICAL RESEARCHER - Wants data, asks about success rates
+DESPERATE SAVER - High urgency, time pressure, crisis language
+HOPEFUL BUILDER - Optimistic, growth-focused, future-oriented
+SKEPTICAL EVALUATOR - Cautious, mentions past bad experiences
+CONSENSUS SEEKER - Refers to spouse opinion, needs approval
 
-2. DESPERATE SAVER
-- Psychological markers: High urgency, crisis-driven, action-oriented (Prochaska-DiClemente Action stage)
-- Language patterns: "running out of time", "last chance", "urgent", "falling apart"
-- Decision-making: Emotion-driven, immediate need, few alternatives considered
-- Crisis response: Panic-motivated, willing to invest significantly
-
-3. HOPEFUL BUILDER
-- Psychological markers: Growth mindset, optimistic bias, future-focused
-- Language patterns: "improve", "build", "grow together", "invest in our future"
-- Decision-making: Collaborative, investment-oriented, long-term thinking
-- Crisis response: Sees crisis as opportunity, motivated by positive outcomes
-
-4. SKEPTICAL EVALUATOR
-- Psychological markers: High threat detection, past negative experiences, trust issues
-- Language patterns: "scam", "too good to be true", "been burned before", "prove it"
-- Decision-making: Risk-averse, requires extensive validation, slow to commit
-- Crisis response: Defensive, suspects quick fixes, needs credibility building
-
-5. CONSENSUS SEEKER
-- Psychological markers: Relationship-dependent, approval-seeking, conflict-avoidant
-- Language patterns: "my spouse thinks", "we need to discuss", "not sure they'll agree"
-- Decision-making: Collaborative, requires partner buy-in, externally validated
-- Crisis response: Torn between personal desire and partner resistance
-
-Extract ONLY evidence from the transcript. Return JSON:
-{{"primary_archetype": "DESPERATE SAVER", "confidence_score": 0.85, "behavioral_evidence": ["quote1", "quote2"], "psychological_markers": ["marker1", "marker2"], "decision_strategy": "emotion-driven, immediate action"}}"""
+JSON response:
+{{"primary_archetype": "DESPERATE SAVER", "confidence_score": 0.8}}"""
 
         try:
             logger.info(f"Classifying archetype for content length: {len(content_preview)}")
@@ -553,24 +530,10 @@ Extract ONLY evidence from the transcript. Return JSON:
             # Add missing fields for compatibility with frontend expectations
             result.setdefault('secondary_archetype', 'Hopeful Builder')
             result.setdefault('confidence_score', 0.7)
-
-            # Transform new detailed evidence format to legacy format for frontend compatibility
-            archetype_evidence = {}
-            if 'behavioral_evidence' in result:
-                archetype_evidence['supporting_quotes'] = result.get('behavioral_evidence', [])
-            else:
-                archetype_evidence['supporting_quotes'] = []
-
-            if 'psychological_markers' in result:
-                archetype_evidence['behavioral_indicators'] = result.get('psychological_markers', [])
-            else:
-                archetype_evidence['behavioral_indicators'] = []
-
-            result.setdefault('archetype_evidence', archetype_evidence)
-
-            # Add decision strategy insight for sales coaching
-            if 'decision_strategy' in result:
-                result['sales_approach'] = result['decision_strategy']
+            result.setdefault('archetype_evidence', {
+                "supporting_quotes": [],
+                "behavioral_indicators": []
+            })
 
             logger.info(f"Archetype classification successful: {result.get('primary_archetype')}")
             return result
