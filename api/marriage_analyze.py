@@ -425,9 +425,12 @@ Respond with ONLY valid JSON matching this format."""
     async def analyze_emotional_journey(self, content):
         """Track emotional journey throughout the call"""
 
+        # Use same truncation as archetype for consistency
+        content_preview = content[:2000] if len(content) > 2000 else content
+
         prompt = f"""Track the prospect's emotional journey in this marriage coaching call:
 
-TRANSCRIPT: {content}
+TRANSCRIPT: {content_preview}
 
 Return JSON:
 {{
@@ -448,29 +451,39 @@ Return JSON:
 }}"""
 
         try:
-            logger.info(f"Analyzing emotional journey for content length: {len(content)}")
+            logger.info(f"Analyzing emotional journey for content length: {len(content_preview)}")
+
             response = await self.client.messages.create(
                 model="claude-3-5-sonnet-20241022",
-                max_tokens=1500,
+                max_tokens=500,
                 messages=[{"role": "user", "content": prompt}]
             )
 
             response_text = response.content[0].text.strip()
-            logger.info(f"Emotional journey raw response: {response_text[:200]}...")
+            logger.info(f"Emotional journey FULL response: '{response_text}'")
 
             if response_text.startswith('```json'):
                 response_text = response_text.replace('```json', '').replace('```', '').strip()
             if response_text.startswith('```'):
                 response_text = response_text.replace('```', '').strip()
 
+            # Try to extract JSON like archetype
+            import re
+            json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
+            if json_match:
+                response_text = json_match.group(0)
+                logger.info(f"Extracted emotional journey JSON: '{response_text[:200]}...'")
+
             result = json.loads(response_text)
-            logger.info(f"Emotional journey analysis successful")
+            logger.info(f"Emotional journey analysis SUCCESSFUL")
             return result
 
         except Exception as e:
-            logger.error(f"Emotional journey analysis error: {str(e)}")
-            logger.error(f"Raw response that failed: {response_text if 'response_text' in locals() else 'No response'}")
-            return self.get_fallback_emotional_journey()
+            logger.error(f"Emotional journey analysis FAILED: {str(e)}")
+            logger.error(f"Full response: '{response_text if 'response_text' in locals() else 'NO RESPONSE'}'")
+            fallback = self.get_fallback_emotional_journey()
+            logger.info(f"Returning emotional journey fallback: {fallback}")
+            return fallback
 
     async def classify_marriage_archetype(self, content):
         """Classify into marriage coaching specific archetypes"""
@@ -508,23 +521,35 @@ JSON response:
 
         try:
             logger.info(f"Classifying archetype for content length: {len(content_preview)}")
+            logger.info(f"Archetype prompt: {prompt[:200]}...")
+
             response = await self.client.messages.create(
                 model="claude-3-5-sonnet-20241022",
-                max_tokens=200,
+                max_tokens=100,
                 messages=[{"role": "user", "content": prompt}]
             )
 
             response_text = response.content[0].text.strip()
-            logger.info(f"Archetype raw response: {response_text}")
+            logger.info(f"Archetype FULL raw response: '{response_text}'")
 
             # Clean response
             response_text = response_text.replace('```json', '').replace('```', '').strip()
+            logger.info(f"Cleaned response: '{response_text}'")
+
+            # Try to find JSON in response if it's embedded in text
+            import re
+            json_match = re.search(r'\{[^}]*\}', response_text)
+            if json_match:
+                response_text = json_match.group(0)
+                logger.info(f"Extracted JSON: '{response_text}'")
 
             # Parse JSON
             result = json.loads(response_text)
+            logger.info(f"Parsed result: {result}")
 
             # Validate required fields
             if 'primary_archetype' not in result:
+                logger.error(f"Missing primary_archetype in result: {result}")
                 raise ValueError("Missing primary_archetype field")
 
             # Add missing fields for compatibility with frontend expectations
@@ -535,13 +560,17 @@ JSON response:
                 "behavioral_indicators": []
             })
 
-            logger.info(f"Archetype classification successful: {result.get('primary_archetype')}")
+            logger.info(f"Archetype classification SUCCESSFUL: {result.get('primary_archetype')}")
             return result
 
         except Exception as e:
-            logger.error(f"Archetype classification error: {str(e)}")
-            logger.error(f"Raw response: '{response_text if 'response_text' in locals() else 'No response'}'")
-            return self.get_fallback_archetype()
+            logger.error(f"Archetype classification FAILED: {str(e)}")
+            logger.error(f"Exception type: {type(e)}")
+            logger.error(f"Raw response: '{response_text if 'response_text' in locals() else 'NO RESPONSE RECEIVED'}'")
+            logger.error(f"Prompt that failed: '{prompt}'")
+            fallback = self.get_fallback_archetype()
+            logger.info(f"Returning fallback: {fallback}")
+            return fallback
 
     async def analyze_talk_track_improvements(self, content, sales_framework, marriage_analysis):
         """Generate specific talk track improvements for marriage coaching sales"""
