@@ -24,7 +24,7 @@ class MarriageCoachingAnalyzer:
     def __init__(self, api_key):
         self.client = AsyncAnthropic(api_key=api_key)
 
-    async def analyze_marriage_coaching_call(self, content, filename="transcript.txt"):
+    async def analyze_marriage_coaching_call(self, content, filename="transcript.txt", client_name=None, closer_name=None, zoom_meeting_id=None, call_date=None):
         """Complete marriage coaching sales analysis"""
 
         try:
@@ -39,11 +39,34 @@ class MarriageCoachingAnalyzer:
             archetype_classification = await self.classify_marriage_archetype(content)
             talk_track_improvements = await self.analyze_talk_track_improvements(content, sales_framework_analysis, marriage_specific_analysis)
 
+            # Calculate success probability
+            success_probability = self.calculate_marriage_success_probability(
+                sales_framework_analysis, marriage_specific_analysis, archetype_classification
+            )
+
+            # Determine coaching urgency (75% threshold)
+            coaching_assessment = self.determine_coaching_urgency(success_probability)
+
+            # Extract participant names if not provided
+            if not client_name or not closer_name:
+                extracted_names = self.extract_participant_names(content)
+                client_name = client_name or extracted_names.get('client_name')
+                closer_name = closer_name or extracted_names.get('closer_name')
+
             return {
                 'transcript_id': filename,
                 'analysis_timestamp': datetime.now().isoformat(),
                 'status': 'success',
                 'word_count': len(content.split()),
+
+                # Call metadata
+                'call_metadata': {
+                    'client_name': client_name,
+                    'closer_name': closer_name,
+                    'zoom_meeting_id': zoom_meeting_id,
+                    'call_date': call_date or datetime.now().strftime('%Y-%m-%d'),
+                    'analysis_timestamp': datetime.now().isoformat()
+                },
 
                 # Core analyses
                 'sales_framework_analysis': sales_framework_analysis,
@@ -54,9 +77,8 @@ class MarriageCoachingAnalyzer:
                 'talk_track_improvements': talk_track_improvements,
 
                 # Calculated metrics
-                'success_probability': self.calculate_marriage_success_probability(
-                    sales_framework_analysis, marriage_specific_analysis, archetype_classification
-                )
+                'success_probability': success_probability,
+                'coaching_assessment': coaching_assessment
             }
 
         except Exception as e:
@@ -578,6 +600,85 @@ Respond with ONLY valid JSON matching this format."""
 
         logger.info(f"HARDCODED archetype classification: {archetype}")
         return result
+
+    def determine_coaching_urgency(self, success_probability):
+        """
+        Determine if immediate coaching is needed based on 75% threshold
+        Only flag high-probability misses (>=75%) for urgent coaching
+        """
+        if success_probability >= 0.75:
+            return {
+                'immediate_coaching_needed': True,
+                'urgency_reason': 'High-probability prospect (75%+) requires immediate coaching attention',
+                'coaching_priority': 'URGENT',
+                'recommended_actions': [
+                    'Review call recording immediately',
+                    'Identify specific missed closing opportunities',
+                    'Schedule coaching session within 24 hours',
+                    'Prepare follow-up strategy for prospect'
+                ]
+            }
+        elif success_probability >= 0.60:
+            return {
+                'immediate_coaching_needed': False,
+                'urgency_reason': 'Moderate probability prospect - standard coaching queue',
+                'coaching_priority': 'STANDARD',
+                'recommended_actions': [
+                    'Include in weekly coaching review',
+                    'Analyze for skill development opportunities',
+                    'Note patterns for group coaching sessions'
+                ]
+            }
+        else:
+            return {
+                'immediate_coaching_needed': False,
+                'urgency_reason': 'Low probability prospect - focus on lead quality',
+                'coaching_priority': 'LOW',
+                'recommended_actions': [
+                    'Review lead qualification process',
+                    'Assess if prospect was properly qualified',
+                    'Focus coaching on discovery and qualification skills'
+                ]
+            }
+
+    def extract_participant_names(self, content):
+        """
+        Extract participant names from transcript using pattern matching
+        Enhanced name detection for Phase 3
+        """
+        import re
+
+        names = {'client_name': None, 'closer_name': None}
+        content_lower = content.lower()
+
+        # Common introduction patterns
+        intro_patterns = [
+            r"hi,?\s+i'?m\s+([a-z]+)",
+            r"my name is\s+([a-z]+)",
+            r"this is\s+([a-z]+)",
+            r"i'm\s+([a-z]+)",
+            r"speaking with\s+([a-z]+)"
+        ]
+
+        found_names = []
+        for pattern in intro_patterns:
+            matches = re.findall(pattern, content_lower)
+            found_names.extend(matches)
+
+        # Remove common words that aren't names
+        common_words = {'calling', 'here', 'good', 'great', 'fine', 'okay', 'sure', 'yes', 'no'}
+        potential_names = [name.title() for name in found_names if name not in common_words and len(name) > 2]
+
+        # Assign names - first unique name is likely client, second is closer
+        unique_names = list(dict.fromkeys(potential_names))  # Remove duplicates while preserving order
+
+        if len(unique_names) >= 1:
+            names['client_name'] = unique_names[0]
+        if len(unique_names) >= 2:
+            names['closer_name'] = unique_names[1]
+
+        logger.info(f"Extracted names: {names}")
+        return names
 
     async def analyze_talk_track_improvements(self, content, sales_framework, marriage_analysis):
         """Generate specific talk track improvements for marriage coaching sales"""
