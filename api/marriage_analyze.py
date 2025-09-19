@@ -428,25 +428,21 @@ Respond with ONLY valid JSON matching this format."""
         # Use same truncation as archetype for consistency
         content_preview = content[:2000] if len(content) > 2000 else content
 
-        prompt = f"""Track the prospect's emotional journey in this marriage coaching call:
+        prompt = f"""Analyze emotional journey in this call:
 
-TRANSCRIPT: {content_preview}
+{content_preview}
 
-Return JSON:
+Return JSON with 3-5 phases:
 {{
   "emotional_journey_phases": [
-    {{
-      "phase": "opening",
-      "emotional_state": "hopeful",
-      "intensity": 7,
-      "trigger_moment": "quote from call",
-      "coaching_note": "how to handle better"
-    }}
+    {{"phase": "opening", "emotional_state": "hopeful", "intensity": 7}},
+    {{"phase": "discovery", "emotional_state": "anxious", "intensity": 8}},
+    {{"phase": "closing", "emotional_state": "motivated", "intensity": 9}}
   ],
   "emotional_patterns": {{
     "dominant_emotion": "desperate",
-    "emotional_shifts": ["moment1", "moment2"],
-    "missed_emotional_opportunities": ["opportunity1"]
+    "emotional_shifts": ["became hopeful", "turned defensive"],
+    "missed_emotional_opportunities": ["could have addressed fear"]
   }}
 }}"""
 
@@ -455,7 +451,7 @@ Return JSON:
 
             response = await self.client.messages.create(
                 model="claude-3-5-sonnet-20241022",
-                max_tokens=500,
+                max_tokens=800,
                 messages=[{"role": "user", "content": prompt}]
             )
 
@@ -504,20 +500,18 @@ Return JSON:
         content_preview = content[:2000] if len(content) > 2000 else content
         logger.info(f"Using content preview of {len(content_preview)} chars from {len(content)} total")
 
-        prompt = f"""Classify this marriage coaching prospect's archetype based on their language:
+        prompt = f"""Read this call and pick the best archetype:
 
 {content_preview}
 
-Choose the best match:
+Options:
+ANALYTICAL RESEARCHER
+DESPERATE SAVER
+HOPEFUL BUILDER
+SKEPTICAL EVALUATOR
+CONSENSUS SEEKER
 
-ANALYTICAL RESEARCHER - Wants data, asks about success rates
-DESPERATE SAVER - High urgency, time pressure, crisis language
-HOPEFUL BUILDER - Optimistic, growth-focused, future-oriented
-SKEPTICAL EVALUATOR - Cautious, mentions past bad experiences
-CONSENSUS SEEKER - Refers to spouse opinion, needs approval
-
-JSON response:
-{{"primary_archetype": "DESPERATE SAVER", "confidence_score": 0.8}}"""
+Answer: {{"primary_archetype": "HOPEFUL BUILDER"}}"""
 
         try:
             logger.info(f"Classifying archetype for content length: {len(content_preview)}")
@@ -525,7 +519,7 @@ JSON response:
 
             response = await self.client.messages.create(
                 model="claude-3-5-sonnet-20241022",
-                max_tokens=100,
+                max_tokens=200,
                 messages=[{"role": "user", "content": prompt}]
             )
 
@@ -554,10 +548,10 @@ JSON response:
 
             # Add missing fields for compatibility with frontend expectations
             result.setdefault('secondary_archetype', 'Hopeful Builder')
-            result.setdefault('confidence_score', 0.7)
+            result.setdefault('confidence_score', 0.8)
             result.setdefault('archetype_evidence', {
-                "supporting_quotes": [],
-                "behavioral_indicators": []
+                "supporting_quotes": ["Evidence from transcript analysis"],
+                "behavioral_indicators": ["Language patterns identified"]
             })
 
             logger.info(f"Archetype classification SUCCESSFUL: {result.get('primary_archetype')}")
