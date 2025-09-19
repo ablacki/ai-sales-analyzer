@@ -469,31 +469,31 @@ Respond with ONLY valid JSON matching this format."""
         # Generate phases based on dominant emotion
         if dominant_emotion == "desperate":
             phases = [
-                {"phase": "opening", "emotional_state": "panicked", "intensity": 9, "trigger_moment": "Expressed urgency"},
-                {"phase": "discovery", "emotional_state": "vulnerable", "intensity": 8, "trigger_moment": "Shared relationship struggles"},
-                {"phase": "presentation", "emotional_state": "hopeful", "intensity": 7, "trigger_moment": "Heard solution possibilities"},
-                {"phase": "closing", "emotional_state": "motivated", "intensity": 8, "trigger_moment": "Ready to take action"}
+                {"phase": "opening", "emotional_state": "panicked", "intensity": 9, "trigger_moment": "Expressed urgency", "coaching_note": "Acknowledge crisis while building hope - avoid rushing to solution"},
+                {"phase": "discovery", "emotional_state": "vulnerable", "intensity": 8, "trigger_moment": "Shared relationship struggles", "coaching_note": "Show empathy and create safe space for deeper sharing"},
+                {"phase": "presentation", "emotional_state": "hopeful", "intensity": 7, "trigger_moment": "Heard solution possibilities", "coaching_note": "Build on this hope with concrete success stories"},
+                {"phase": "closing", "emotional_state": "motivated", "intensity": 8, "trigger_moment": "Ready to take action", "coaching_note": "Strike while motivation is high - create urgency around timeline"}
             ]
         elif dominant_emotion == "hopeful":
             phases = [
-                {"phase": "opening", "emotional_state": "optimistic", "intensity": 7, "trigger_moment": "Positive about change"},
-                {"phase": "discovery", "emotional_state": "engaged", "intensity": 8, "trigger_moment": "Actively participating"},
-                {"phase": "presentation", "emotional_state": "excited", "intensity": 8, "trigger_moment": "Seeing potential"},
-                {"phase": "closing", "emotional_state": "motivated", "intensity": 9, "trigger_moment": "Eager to begin"}
+                {"phase": "opening", "emotional_state": "optimistic", "intensity": 7, "trigger_moment": "Positive about change", "coaching_note": "Channel optimism into commitment - avoid overconfidence"},
+                {"phase": "discovery", "emotional_state": "engaged", "intensity": 8, "trigger_moment": "Actively participating", "coaching_note": "Use engagement to uncover deeper motivations"},
+                {"phase": "presentation", "emotional_state": "excited", "intensity": 8, "trigger_moment": "Seeing potential", "coaching_note": "Paint vivid picture of transformed relationship"},
+                {"phase": "closing", "emotional_state": "motivated", "intensity": 9, "trigger_moment": "Eager to begin", "coaching_note": "Close confidently - motivation is at peak level"}
             ]
         elif dominant_emotion == "skeptical":
             phases = [
-                {"phase": "opening", "emotional_state": "guarded", "intensity": 6, "trigger_moment": "Initial hesitation"},
-                {"phase": "discovery", "emotional_state": "skeptical", "intensity": 7, "trigger_moment": "Questioning approach"},
-                {"phase": "presentation", "emotional_state": "analytical", "intensity": 6, "trigger_moment": "Evaluating credibility"},
-                {"phase": "closing", "emotional_state": "cautious", "intensity": 5, "trigger_moment": "Still uncertain"}
+                {"phase": "opening", "emotional_state": "guarded", "intensity": 6, "trigger_moment": "Initial hesitation", "coaching_note": "Build credibility slowly - avoid overwhelming with claims"},
+                {"phase": "discovery", "emotional_state": "skeptical", "intensity": 7, "trigger_moment": "Questioning approach", "coaching_note": "Address concerns directly with proof and testimonials"},
+                {"phase": "presentation", "emotional_state": "analytical", "intensity": 6, "trigger_moment": "Evaluating credibility", "coaching_note": "Provide data, guarantees, and risk reversal options"},
+                {"phase": "closing", "emotional_state": "cautious", "intensity": 5, "trigger_moment": "Still uncertain", "coaching_note": "Offer trial or consultation to reduce perceived risk"}
             ]
         else:
             phases = [
-                {"phase": "opening", "emotional_state": "curious", "intensity": 6, "trigger_moment": "Learning about process"},
-                {"phase": "discovery", "emotional_state": "concerned", "intensity": 7, "trigger_moment": "Discussing challenges"},
-                {"phase": "presentation", "emotional_state": "interested", "intensity": 7, "trigger_moment": "Considering options"},
-                {"phase": "closing", "emotional_state": "thoughtful", "intensity": 6, "trigger_moment": "Weighing decision"}
+                {"phase": "opening", "emotional_state": "curious", "intensity": 6, "trigger_moment": "Learning about process", "coaching_note": "Build curiosity into engagement through questions"},
+                {"phase": "discovery", "emotional_state": "concerned", "intensity": 7, "trigger_moment": "Discussing challenges", "coaching_note": "Normalize concerns while building urgency around consequences"},
+                {"phase": "presentation", "emotional_state": "interested", "intensity": 7, "trigger_moment": "Considering options", "coaching_note": "Present clear value proposition and differentiation"},
+                {"phase": "closing", "emotional_state": "thoughtful", "intensity": 6, "trigger_moment": "Weighing decision", "coaching_note": "Help with decision-making process - provide framework"}
             ]
 
         result = {
