@@ -475,51 +475,67 @@ Return JSON:
     async def classify_marriage_archetype(self, content):
         """Classify into marriage coaching specific archetypes"""
 
-        prompt = f"""Analyze this marriage coaching call and classify the prospect:
+        # First try a simple API test
+        try:
+            test_response = await self.client.messages.create(
+                model="claude-3-5-sonnet-20241022",
+                max_tokens=50,
+                messages=[{"role": "user", "content": "Reply with just: API_WORKING"}]
+            )
+            logger.info(f"API test successful: {test_response.content[0].text}")
+        except Exception as e:
+            logger.error(f"API test failed: {str(e)}")
+            return self.get_fallback_archetype()
 
-TRANSCRIPT: {content}
+        # Truncate content if too long
+        content_preview = content[:3000] if len(content) > 3000 else content
 
-Choose the best archetype:
-1. ANALYTICAL RESEARCHER - Wants data/stats
-2. DESPERATE SAVER - High urgency, crisis mode
-3. HOPEFUL BUILDER - Optimistic, growth-focused
-4. SKEPTICAL EVALUATOR - Cautious, worried about scams
-5. CONSENSUS SEEKER - Needs spouse approval
+        prompt = f"""Analyze this call and classify the prospect:
 
-Return JSON:
-{{
-  "primary_archetype": "DESPERATE SAVER",
-  "confidence_score": 0.8,
-  "secondary_archetype": "HOPEFUL BUILDER",
-  "archetype_evidence": {{
-    "supporting_quotes": ["quote1", "quote2"],
-    "behavioral_indicators": ["behavior1", "behavior2"]
-  }}
-}}"""
+{content_preview}
+
+Choose 1 archetype:
+1. ANALYTICAL RESEARCHER
+2. DESPERATE SAVER
+3. HOPEFUL BUILDER
+4. SKEPTICAL EVALUATOR
+5. CONSENSUS SEEKER
+
+Return only this JSON:
+{{"primary_archetype": "DESPERATE SAVER", "confidence_score": 0.8}}"""
 
         try:
-            logger.info(f"Classifying archetype for content length: {len(content)}")
+            logger.info(f"Classifying archetype for content length: {len(content_preview)}")
             response = await self.client.messages.create(
                 model="claude-3-5-sonnet-20241022",
-                max_tokens=1500,
+                max_tokens=200,
                 messages=[{"role": "user", "content": prompt}]
             )
 
             response_text = response.content[0].text.strip()
-            logger.info(f"Archetype raw response: {response_text[:200]}...")
+            logger.info(f"Archetype raw response: {response_text}")
 
-            if response_text.startswith('```json'):
-                response_text = response_text.replace('```json', '').replace('```', '').strip()
-            if response_text.startswith('```'):
-                response_text = response_text.replace('```', '').strip()
+            # Clean response
+            response_text = response_text.replace('```json', '').replace('```', '').strip()
 
+            # Parse JSON
             result = json.loads(response_text)
+
+            # Validate required fields
+            if 'primary_archetype' not in result:
+                raise ValueError("Missing primary_archetype field")
+
+            # Add missing fields for compatibility
+            result.setdefault('secondary_archetype', 'Hopeful Builder')
+            result.setdefault('archetype_evidence', {"supporting_quotes": [], "behavioral_indicators": []})
+            result.setdefault('confidence_score', 0.7)
+
             logger.info(f"Archetype classification successful: {result.get('primary_archetype')}")
             return result
 
         except Exception as e:
             logger.error(f"Archetype classification error: {str(e)}")
-            logger.error(f"Raw response that failed: {response_text if 'response_text' in locals() else 'No response'}")
+            logger.error(f"Raw response: '{response_text if 'response_text' in locals() else 'No response'}'")
             return self.get_fallback_archetype()
 
     async def analyze_talk_track_improvements(self, content, sales_framework, marriage_analysis):
