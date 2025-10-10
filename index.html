@@ -990,11 +990,11 @@
                 }
 
                 const frameworkCategories = [
-                    { key: 'call_control', label: 'Call Control', icon: '🎛️' },
+                    { key: 'call_control', label: 'Call Control', icon: '' },
                     { key: 'discovery_depth', label: 'Discovery Depth', icon: '' },
-                    { key: 'empathetic_confrontation', label: 'Empathetic Confrontation', icon: '💝' },
+                    { key: 'empathetic_confrontation', label: 'Empathetic Confrontation', icon: '' },
                     { key: 'objection_handling', label: 'Objection Handling', icon: '' },
-                    { key: 'value_positioning', label: 'Value Positioning', icon: '💎' },
+                    { key: 'value_positioning', label: 'Value Positioning', icon: '' },
                     { key: 'closing_strength', label: 'Closing Strength', icon: '' }
                 ];
 
@@ -1131,11 +1131,11 @@
                     Object.entries(framework).forEach(([key, data]) => {
                         if (data.coaching_fix && data.coaching_fix !== 'No specific coaching recommendation') {
                             const labels = {
-                                'call_control': '🎛️ Call Control',
+                                'call_control': 'Call Control',
                                 'discovery_depth': 'Discovery Depth',
-                                'empathetic_confrontation': '💝 Empathetic Confrontation',
+                                'empathetic_confrontation': 'Empathetic Confrontation',
                                 'objection_handling': 'Objection Handling',
-                                'value_positioning': '💎 Value Positioning',
+                                'value_positioning': 'Value Positioning',
                                 'closing_strength': 'Closing Strength'
                             };
                             html += `<div class="framework-recommendation">
