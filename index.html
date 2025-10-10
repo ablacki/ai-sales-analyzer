@@ -540,7 +540,7 @@
             </div>
 
             <div class="card">
-                <h3>📊 Quick Stats</h3>
+                <h3>Quick Stats</h3>
                 <div class="stats-grid">
                     <div class="stat-item">
                         <div style="font-size: 1.5rem; font-weight: bold;" id="totalAnalyzed">0</div>
@@ -660,12 +660,6 @@
                     </div>
                 </div>
 
-                <div class="recommendations-section">
-                    <h4 style="margin-bottom: 1rem; color: #2c3e50;">💡 Coaching Recommendations</h4>
-                    <div id="recommendationsContainer">
-                        <p style="color: #7f8c8d; text-align: center;">Upload and analyze a transcript to see personalized coaching recommendations</p>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
@@ -986,7 +980,7 @@
                     frameworkSection.id = 'salesRepFramework';
                     frameworkSection.className = 'framework-section';
                     frameworkSection.innerHTML = `
-                        <h4 style="margin-bottom: 1rem; color: #2c3e50;">🎯 Sales Rep Performance Framework</h4>
+                        <h4 style="margin-bottom: 1rem; color: #2c3e50;">Sales Rep Performance Framework</h4>
                         <div id="frameworkScores"></div>
                     `;
                     personalityChart.insertAdjacentElement('afterend', frameworkSection);
@@ -997,11 +991,11 @@
 
                 const frameworkCategories = [
                     { key: 'call_control', label: 'Call Control', icon: '🎛️' },
-                    { key: 'discovery_depth', label: 'Discovery Depth', icon: '🔍' },
+                    { key: 'discovery_depth', label: 'Discovery Depth', icon: '' },
                     { key: 'empathetic_confrontation', label: 'Empathetic Confrontation', icon: '💝' },
                     { key: 'objection_handling', label: 'Objection Handling', icon: '🛡️' },
                     { key: 'value_positioning', label: 'Value Positioning', icon: '💎' },
-                    { key: 'closing_strength', label: 'Closing Strength', icon: '🎯' }
+                    { key: 'closing_strength', label: 'Closing Strength', icon: '' }
                 ];
 
                 let frameworkHTML = '';
@@ -1033,7 +1027,7 @@
                 });
 
                 document.getElementById('frameworkScores').innerHTML = frameworkHTML;
-                console.log('🎨 Framework HTML populated:', frameworkHTML.length, 'characters');
+                console.log('Framework HTML populated:', frameworkHTML.length, 'characters');
                 console.log('createSalesRepFrameworkSection completed successfully');
             }
 
@@ -1053,7 +1047,7 @@
                     journeySection.id = 'emotionalJourney';
                     journeySection.className = 'emotional-journey-section';
                     journeySection.innerHTML = `
-                        <h4 style="margin-bottom: 1rem; color: #2c3e50;">😊 Prospect's Emotional Journey</h4>
+                        <h4 style="margin-bottom: 1rem; color: #2c3e50;">Prospect's Emotional Journey</h4>
                         <div id="journeyPhases"></div>
                     `;
                     frameworkSection.insertAdjacentElement('afterend', journeySection);
@@ -1138,22 +1132,22 @@
                 console.log('- Talk track:', !!talkTrack);
                 console.log('- Archetype:', !!archetype);
 
-                let html = '<h3>🎯 Marriage Coaching Recommendations</h3>';
+                let html = '<h3>Marriage Coaching Recommendations</h3>';
 
                 // Framework-based recommendations (from actual API data)
                 if (framework) {
                     html += '<div class="recommendation-section">';
-                    html += '<h4>🔧 Performance Improvements</h4>';
+                    html += '<h4>Performance Improvements</h4>';
 
                     Object.entries(framework).forEach(([key, data]) => {
                         if (data.coaching_fix && data.coaching_fix !== 'No specific coaching recommendation') {
                             const labels = {
                                 'call_control': '🎛️ Call Control',
-                                'discovery_depth': '🔍 Discovery Depth',
+                                'discovery_depth': 'Discovery Depth',
                                 'empathetic_confrontation': '💝 Empathetic Confrontation',
                                 'objection_handling': '🛡️ Objection Handling',
                                 'value_positioning': '💎 Value Positioning',
-                                'closing_strength': '🎯 Closing Strength'
+                                'closing_strength': 'Closing Strength'
                             };
                             html += `<div class="framework-recommendation">
                                 <strong>${labels[key] || key}:</strong> ${data.coaching_fix}
@@ -1195,7 +1189,7 @@
                 // Archetype strategy
                 if (archetype?.optimal_approach) {
                     html += '<div class="recommendation-section">';
-                    html += '<h4>🎯 Archetype Strategy</h4>';
+                    html += '<h4>Archetype Strategy</h4>';
                     html += `<p><strong>Optimal Approach:</strong> ${archetype.optimal_approach}</p>`;
                     if (archetype.closing_strategy) {
                         html += `<p><strong>Closing Strategy:</strong> ${archetype.closing_strategy}</p>`;
@@ -1204,9 +1198,9 @@
                 }
 
                 // Fallback if no recommendations found
-                if (html === '<h3>🎯 Marriage Coaching Recommendations</h3>') {
+                if (html === '<h3>Marriage Coaching Recommendations</h3>') {
                     html += '<div class="recommendation-section">';
-                    html += '<h4>⚠️ Analysis in Progress</h4>';
+                    html += '<h4>Analysis in Progress</h4>';
                     html += '<p>Recommendations are being generated based on the framework analysis. The AI analysis may need more detailed transcript content to provide specific coaching recommendations.</p>';
                     html += '</div>';
                 }
@@ -1241,7 +1235,7 @@
 
                 if (recommendations.immediate_action_plan?.top_3_priorities) {
                     html += '<div class="recommendation">';
-                    html += '<h4>🎯 Immediate Actions</h4>';
+                    html += '<h4>Immediate Actions</h4>';
                     html += '<ul>';
                     recommendations.immediate_action_plan.top_3_priorities.forEach(action => {
                         html += `<li>${action}</li>`;
