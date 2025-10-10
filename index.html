@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enhanced Sales Call Analyzer - Dashboard</title>
+    <title>MR Sales Call Analyzer - Dashboard</title>
+    <!-- PDF Generation Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -499,8 +502,8 @@
 </head>
 <body>
     <header class="header">
-        <h1>🧠 Enhanced Sales Call Analyzer</h1>
-        <p>Real AI-Powered Psychological Profiling with Anthropic Claude • Production Ready</p>
+        <h1>MR Sales Call Analyzer</h1>
+        <p>AI-Powered Psychological Profiling</p>
     </header>
 
     <div class="container">
@@ -518,8 +521,8 @@
 
                 <div style="margin: 20px 0; text-align: center;">
                     <label style="display: inline-flex; align-items: center; gap: 10px; background: #f0f8ff; padding: 12px 20px; border-radius: 8px; border: 2px solid #4a90e2; cursor: pointer;">
-                        <input type="checkbox" id="marriageCoachingMode" style="transform: scale(1.2);">
-                        <span style="font-weight: 600; color: #2c5282;">🏠 Use Marriage Coaching Analysis (Enhanced)</span>
+                        <input type="checkbox" id="marriageCoachingMode" checked="true" style="transform: scale(1.2);">
+                        <span style="font-weight: 600; color: #2c5282;">Use Marriage Coaching Analysis (Enhanced)</span>
                     </label>
                     <div style="margin-top: 8px; font-size: 12px; color: #666;">
                         Enhanced analysis with empathetic confrontation tracking, marriage analogies, and surgical coaching feedback
@@ -528,7 +531,7 @@
 
                 <div class="loading" id="loadingIndicator">
                     <div class="spinner"></div>
-                    <p>🧠 Analyzing transcript with Anthropic Claude AI...</p>
+                    <p>Analyzing transcript with Anthropic Claude AI...</p>
                     <small>Performing real psychological profiling and sales analysis...<br>This may take 30-90 seconds</small>
                 </div>
 
@@ -553,19 +556,25 @@
                     </div>
                 </div>
 
-                <button class="btn" onclick="loadBatchResults()">📈 Load Batch Results</button>
-                <button class="btn" onclick="exportResults()">📤 Export Data</button>
+                <button class="btn" onclick="loadBatchResults()">Load Batch Results</button>
+                <div style="position: relative; display: inline-block;">
+                    <button class="btn" onclick="toggleExportDropdown()">Export Data ▼</button>
+                    <div id="exportDropdown" style="display: none; position: absolute; background: white; min-width: 160px; box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2); z-index: 1; border-radius: 4px; margin-top: 5px;">
+                        <a href="#" onclick="exportToPDF()" style="color: black; padding: 12px 16px; text-decoration: none; display: block; border-bottom: 1px solid #ddd;">Export as PDF</a>
+                        <a href="#" onclick="exportResults()" style="color: black; padding: 12px 16px; text-decoration: none; display: block;">Export as JSON</a>
+                    </div>
+                </div>
             </div>
 
             <div class="card">
-                <h3>🎯 Analysis Features</h3>
+                <h3>Analysis Features</h3>
                 <ul style="line-height: 2; color: #5a6c7d;">
-                    <li>🧠 Big Five personality analysis</li>
-                    <li>🎭 5-archetype classification</li>
-                    <li>📞 Sales performance scoring</li>
-                    <li>💡 Coaching recommendations</li>
-                    <li>📊 Success probability calculation</li>
-                    <li>🎨 Emotional journey mapping</li>
+                    <li>Big Five personality analysis</li>
+                    <li>5-archetype classification</li>
+                    <li>Sales performance scoring</li>
+                    <li>Coaching recommendations</li>
+                    <li>Success probability calculation</li>
+                    <li>Emotional journey mapping</li>
                 </ul>
             </div>
         </div>
@@ -591,7 +600,10 @@
                     <h4 style="margin-bottom: 1rem; color: #2c3e50;">Big Five Personality Profile</h4>
                     <div class="personality-bar">
                         <div class="personality-label">
-                            <span>Openness</span>
+                            <div>
+                                <span>Openness</span>
+                                <div style="font-size: 11px; color: #666; margin-top: 2px;">Intellectual curiosity, creativity, willingness to explore new ideas</div>
+                            </div>
                             <span id="opennessScore">-</span>
                         </div>
                         <div class="bar-container">
@@ -600,7 +612,10 @@
                     </div>
                     <div class="personality-bar">
                         <div class="personality-label">
-                            <span>Conscientiousness</span>
+                            <div>
+                                <span>Conscientiousness</span>
+                                <div style="font-size: 11px; color: #666; margin-top: 2px;">Organization, discipline, goal-oriented behavior</div>
+                            </div>
                             <span id="conscientiousnessScore">-</span>
                         </div>
                         <div class="bar-container">
@@ -609,7 +624,10 @@
                     </div>
                     <div class="personality-bar">
                         <div class="personality-label">
-                            <span>Extraversion</span>
+                            <div>
+                                <span>Extraversion</span>
+                                <div style="font-size: 11px; color: #666; margin-top: 2px;">Sociability, assertiveness, energy in social situations</div>
+                            </div>
                             <span id="extraversionScore">-</span>
                         </div>
                         <div class="bar-container">
@@ -618,7 +636,10 @@
                     </div>
                     <div class="personality-bar">
                         <div class="personality-label">
-                            <span>Agreeableness</span>
+                            <div>
+                                <span>Agreeableness</span>
+                                <div style="font-size: 11px; color: #666; margin-top: 2px;">Cooperation, trust, empathy toward others</div>
+                            </div>
                             <span id="agreeablenessScore">-</span>
                         </div>
                         <div class="bar-container">
@@ -627,7 +648,10 @@
                     </div>
                     <div class="personality-bar">
                         <div class="personality-label">
-                            <span>Neuroticism</span>
+                            <div>
+                                <span>Neuroticism</span>
+                                <div style="font-size: 11px; color: #666; margin-top: 2px;">Emotional stability, stress resilience, anxiety levels</div>
+                            </div>
                             <span id="neuroticismScore">-</span>
                         </div>
                         <div class="bar-container">
@@ -731,7 +755,7 @@
                 const endpoint = useMarriageAnalysis ? '/api/marriage-analyze' : '/api/analyze';
 
                 // Call the real Vercel API endpoint
-                console.log('🔍 Starting real AI analysis...');
+                console.log('Starting real AI analysis...');
                 console.log('Analysis type:', useMarriageAnalysis ? 'Marriage Coaching' : 'General Sales');
                 console.log('Content length:', content.length);
                 console.log('Filename:', filename);
@@ -750,8 +774,8 @@
                         })
                     });
 
-                    console.log('📊 API Response status:', response.status);
-                    console.log('📊 API Response headers:', [...response.headers.entries()]);
+                    console.log('API Response status:', response.status);
+                    console.log('API Response headers:', [...response.headers.entries()]);
 
                     if (!response.ok) {
                         const errorText = await response.text();
@@ -794,10 +818,10 @@
                         console.warn('⚠️ WARNING: Response contains mock/fallback data patterns!');
                         console.log('Coaching recommendations:', coaching);
                     } else {
-                        console.log('✅ Response appears to contain real AI analysis');
+                        console.log('Response appears to contain real AI analysis');
                     }
 
-                    console.log('🎯 Analysis completed successfully');
+                    console.log('Analysis completed successfully');
                     return analysis;
 
                 } catch (error) {
@@ -830,19 +854,19 @@
                 document.getElementById('analysisResults').style.display = 'block';
 
                 // Debug: Log the analysis structure
-                console.log('🔍 Analysis structure received:', Object.keys(analysis));
-                console.log('🔍 Full analysis data:', analysis);
+                console.log('Analysis structure received:', Object.keys(analysis));
+                console.log('Full analysis data:', analysis);
 
                 // Check if this is marriage coaching analysis or general analysis
                 const isMarriageAnalysis = analysis.sales_framework_analysis || analysis.marriage_coaching_analysis;
-                console.log('📊 Is marriage analysis?', isMarriageAnalysis);
+                console.log('Is marriage analysis?', isMarriageAnalysis);
 
                 if (isMarriageAnalysis) {
-                    console.log('🎯 Using marriage coaching display');
+                    console.log('Using marriage coaching display');
                     // Marriage coaching analysis format
                     this.displayMarriageCoachingResults(analysis);
                 } else {
-                    console.log('📈 Using general sales display');
+                    console.log('Using general sales display');
                     // General sales analysis format
                     this.displayGeneralSalesResults(analysis);
                 }
@@ -879,9 +903,9 @@
                 const totalScore = analysis.sales_framework_analysis?.total_score;
                 const successProb = analysis.success_probability || 0.5;
 
-                console.log('📊 Framework data:', framework);
-                console.log('📊 Total score:', totalScore);
-                console.log('📊 Success prob:', successProb);
+                console.log('Framework data:', framework);
+                console.log('Total score:', totalScore);
+                console.log('Success prob:', successProb);
 
                 // Calculate sales score more safely
                 let salesScore = 50; // default
@@ -901,7 +925,7 @@
 
                 // Update archetype
                 const archetype = analysis.archetype_analysis?.primary_archetype || 'Mixed Profile';
-                console.log('🎯 Archetype:', archetype);
+                console.log('Archetype:', archetype);
                 document.getElementById('archetypeName').textContent = archetype;
                 document.getElementById('archetypeDesc').textContent = this.getMarriageArchetypeDescription(archetype);
 
@@ -913,20 +937,20 @@
                 }
 
                 // Show framework scores for sales rep performance (new separate section)
-                console.log('📈 Creating framework section...');
-                console.log('📊 Framework data for UI:', JSON.stringify(framework, null, 2));
+                console.log('Creating framework section...');
+                console.log('Framework data for UI:', JSON.stringify(framework, null, 2));
                 this.createSalesRepFrameworkSection(framework);
 
                 // Add emotional journey if available
                 if (analysis.emotional_journey) {
-                    console.log('😊 Adding emotional journey...');
+                    console.log('Adding emotional journey...');
                     this.displayEmotionalJourney(analysis.emotional_journey);
                 }
 
                 // Update marriage coaching recommendations
-                console.log('💡 Updating recommendations...');
+                console.log('Updating recommendations...');
                 this.updateMarriageRecommendations(analysis);
-                console.log('✅ Marriage coaching display complete');
+                console.log('Marriage coaching display complete');
             }
 
             getMarriageArchetypeDescription(archetype) {
@@ -946,7 +970,7 @@
                     console.error('❌ No framework data provided to createSalesRepFrameworkSection');
                     return;
                 }
-                console.log('✅ Framework data exists, proceeding with section creation');
+                console.log('Framework data exists, proceeding with section creation');
 
                 // Find or create the framework section
                 let frameworkSection = document.getElementById('salesRepFramework');
@@ -966,7 +990,7 @@
                         <div id="frameworkScores"></div>
                     `;
                     personalityChart.insertAdjacentElement('afterend', frameworkSection);
-                    console.log('🎯 Created new framework section element');
+                    console.log('Created new framework section element');
                 } else {
                     console.log('📋 Framework section already exists');
                 }
@@ -1010,11 +1034,11 @@
 
                 document.getElementById('frameworkScores').innerHTML = frameworkHTML;
                 console.log('🎨 Framework HTML populated:', frameworkHTML.length, 'characters');
-                console.log('✅ createSalesRepFrameworkSection completed successfully');
+                console.log('createSalesRepFrameworkSection completed successfully');
             }
 
             displayEmotionalJourney(emotionalJourney) {
-                console.log('😊 displayEmotionalJourney called with:', emotionalJourney);
+                console.log('displayEmotionalJourney called with:', emotionalJourney);
 
                 // Find or create emotional journey section
                 let journeySection = document.getElementById('emotionalJourney');
@@ -1033,7 +1057,7 @@
                         <div id="journeyPhases"></div>
                     `;
                     frameworkSection.insertAdjacentElement('afterend', journeySection);
-                    console.log('😊 Created new emotional journey section');
+                    console.log('Created new emotional journey section');
                 } else {
                     console.log('📋 Emotional journey section already exists');
                 }
@@ -1074,7 +1098,7 @@
                 }
 
                 document.getElementById('journeyPhases').innerHTML = journeyHTML;
-                console.log('✅ Emotional journey display completed');
+                console.log('Emotional journey display completed');
             }
 
             getEmotionIcon(emotion) {
@@ -1100,7 +1124,7 @@
                     return;
                 }
                 console.log('📝 Found recommendations container');
-                console.log('📊 Analysis structure for recommendations:', Object.keys(analysis));
+                console.log('Analysis structure for recommendations:', Object.keys(analysis));
 
                 // Extract data from different parts of the analysis
                 const framework = analysis.sales_framework_analysis?.framework_scores;
@@ -1108,7 +1132,7 @@
                 const talkTrack = analysis.talk_track_improvements?.script_drilling_priorities;
                 const archetype = analysis.archetype_analysis?.archetype_coaching_strategy;
 
-                console.log('🔍 Recommendation data sources:');
+                console.log('Recommendation data sources:');
                 console.log('- Framework:', !!framework);
                 console.log('- Marriage coaching:', !!marriageCoaching);
                 console.log('- Talk track:', !!talkTrack);
@@ -1143,7 +1167,7 @@
                 if (marriageCoaching?.critical_intervention_needed) {
                     const triggers = marriageCoaching.critical_intervention_needed;
                     html += '<div class="recommendation-section">';
-                    html += '<h4>🚨 Immediate Coaching Needed</h4>';
+                    html += '<h4>Immediate Coaching Needed</h4>';
 
                     if (triggers.high_probability_miss?.triggered) {
                         html += `<div class="critical-alert">HIGH PROBABILITY MISS: ${triggers.high_probability_miss.immediate_coaching_action || 'Review missed closing opportunities'}</div>`;
@@ -1188,7 +1212,7 @@
                 }
 
                 recommendations.innerHTML = html;
-                console.log('✅ Recommendations updated with:', html.length, 'characters');
+                console.log('Recommendations updated with:', html.length, 'characters');
             }
 
             updatePersonalityChart(bigFive) {
@@ -1356,6 +1380,104 @@
             link.href = URL.createObjectURL(dataBlob);
             link.download = `sales_analysis_export_${new Date().toISOString().split('T')[0]}.json`;
             link.click();
+
+            // Close dropdown
+            document.getElementById('exportDropdown').style.display = 'none';
+        }
+
+        function toggleExportDropdown() {
+            const dropdown = document.getElementById('exportDropdown');
+            dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+        }
+
+        // Close dropdown when clicking outside
+        window.onclick = function(event) {
+            if (!event.target.matches('.btn')) {
+                const dropdown = document.getElementById('exportDropdown');
+                if (dropdown.style.display === 'block') {
+                    dropdown.style.display = 'none';
+                }
+            }
+        }
+
+        async function exportToPDF() {
+            // Close dropdown first
+            document.getElementById('exportDropdown').style.display = 'none';
+
+            const analysisResults = document.getElementById('analysisResults');
+            if (!analysisResults || analysisResults.style.display === 'none') {
+                alert('No analysis results to export. Analyze a transcript first!');
+                return;
+            }
+
+            try {
+                // Show loading indicator
+                const loadingMsg = document.createElement('div');
+                loadingMsg.innerHTML = 'Generating PDF...';
+                loadingMsg.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.8); color: white; padding: 20px; border-radius: 8px; z-index: 9999;';
+                document.body.appendChild(loadingMsg);
+
+                // Capture the analysis results div
+                const canvas = await html2canvas(analysisResults, {
+                    scale: 2,
+                    useCORS: true,
+                    backgroundColor: '#ffffff',
+                    width: analysisResults.scrollWidth,
+                    height: analysisResults.scrollHeight,
+                    scrollX: 0,
+                    scrollY: 0
+                });
+
+                // Create PDF
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new window.jspdf.jsPDF({
+                    orientation: 'portrait',
+                    unit: 'mm',
+                    format: 'a4'
+                });
+
+                // Calculate dimensions
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = pdf.internal.pageSize.getHeight();
+                const imgWidth = pdfWidth - 20; // 10mm margin on each side
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+                let heightLeft = imgHeight;
+                let position = 10; // 10mm top margin
+
+                // Add first page
+                pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+                heightLeft -= pdfHeight - 20; // Account for margins
+
+                // Add additional pages if needed
+                while (heightLeft > 0) {
+                    position = heightLeft - imgHeight + 10; // 10mm margin
+                    pdf.addPage();
+                    pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+                    heightLeft -= pdfHeight - 20;
+                }
+
+                // Generate filename with timestamp
+                const date = new Date().toISOString().split('T')[0];
+                const time = new Date().toTimeString().split(' ')[0].replace(/:/g, '');
+                const filename = `MR_Sales_Analysis_${date}_${time}.pdf`;
+
+                // Save the PDF
+                pdf.save(filename);
+
+                // Remove loading indicator
+                document.body.removeChild(loadingMsg);
+
+            } catch (error) {
+                console.error('PDF generation error:', error);
+                alert('Error generating PDF. Please try again.');
+
+                // Remove loading indicator if it exists
+                const loadingMsg = document.querySelector('[style*="position: fixed"]');
+                if (loadingMsg) {
+                    document.body.removeChild(loadingMsg);
+                }
+            }
         }
 
         // Initialize dashboard when page loads
