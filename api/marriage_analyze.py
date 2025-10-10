@@ -24,7 +24,7 @@ class MarriageCoachingAnalyzer:
     def __init__(self, api_key):
         self.client = AsyncAnthropic(api_key=api_key)
         # Model configuration - easy to update when models change
-        self.model = "claude-3-5-haiku-20241022"  # Updated to current model
+        self.model = "claude-sonnet-4-5"  # Upgraded to Claude Sonnet 4.5 (latest)
 
     async def analyze_marriage_coaching_call(self, content, filename="transcript.txt", client_name=None, closer_name=None, zoom_meeting_id=None, call_date=None):
         """Complete marriage coaching sales analysis"""
