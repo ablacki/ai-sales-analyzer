@@ -809,7 +809,7 @@
                     );
 
                     if (hasMockData) {
-                        console.warn('⚠️ WARNING: Response contains mock/fallback data patterns!');
+                        console.warn('WARNING: Response contains mock/fallback data patterns!');
                         console.log('Coaching recommendations:', coaching);
                     } else {
                         console.log('Response appears to contain real AI analysis');
@@ -993,7 +993,7 @@
                     { key: 'call_control', label: 'Call Control', icon: '🎛️' },
                     { key: 'discovery_depth', label: 'Discovery Depth', icon: '' },
                     { key: 'empathetic_confrontation', label: 'Empathetic Confrontation', icon: '💝' },
-                    { key: 'objection_handling', label: 'Objection Handling', icon: '🛡️' },
+                    { key: 'objection_handling', label: 'Objection Handling', icon: '' },
                     { key: 'value_positioning', label: 'Value Positioning', icon: '💎' },
                     { key: 'closing_strength', label: 'Closing Strength', icon: '' }
                 ];
@@ -1013,7 +1013,7 @@
                     frameworkHTML += `
                         <div class="framework-item">
                             <div class="framework-header">
-                                <span class="framework-icon">${category.icon}</span>
+                                ${category.icon ? `<span class="framework-icon">${category.icon}</span>` : ''}
                                 <span class="framework-label">${category.label}</span>
                                 <span class="framework-score ${colorClass}">${score}/10</span>
                             </div>
@@ -1096,28 +1096,17 @@
             }
 
             getEmotionIcon(emotion) {
-                const icons = {
-                    'hopeful': '🤞',
-                    'desperate': '😰',
-                    'defensive': '🛡️',
-                    'angry': '😠',
-                    'resigned': '😔',
-                    'motivated': '💪',
-                    'skeptical': '🤔',
-                    'curious': '🧐',
-                    'calm': '😌',
-                    'confused': '😕'
-                };
-                return icons[emotion] || '😐';
+                // Return empty string instead of emojis for professional appearance
+                return '';
             }
 
             updateMarriageRecommendations(analysis) {
                 const recommendations = document.getElementById('recommendationsContainer');
                 if (!recommendations) {
-                    console.error('❌ Recommendations container not found');
+                    console.error('Recommendations container not found');
                     return;
                 }
-                console.log('📝 Found recommendations container');
+                console.log('Found recommendations container');
                 console.log('Analysis structure for recommendations:', Object.keys(analysis));
 
                 // Extract data from different parts of the analysis
@@ -1145,7 +1134,7 @@
                                 'call_control': '🎛️ Call Control',
                                 'discovery_depth': 'Discovery Depth',
                                 'empathetic_confrontation': '💝 Empathetic Confrontation',
-                                'objection_handling': '🛡️ Objection Handling',
+                                'objection_handling': 'Objection Handling',
                                 'value_positioning': '💎 Value Positioning',
                                 'closing_strength': 'Closing Strength'
                             };
