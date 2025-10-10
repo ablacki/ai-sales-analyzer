@@ -447,100 +447,182 @@ Respond with ONLY valid JSON matching this format."""
             return self.get_fallback_marriage_analysis()
 
     async def analyze_emotional_journey(self, content):
-        """Track emotional journey throughout the call"""
+        """Track emotional journey throughout the call using Claude Sonnet 4.5"""
 
-        # EMERGENCY HARDCODED APPROACH - bypass AI temporarily
-        logger.info("USING EMERGENCY HARDCODED EMOTIONAL JOURNEY")
+        # Use shorter content for reliable analysis
+        content_preview = content[:3000] if len(content) > 3000 else content
+        logger.info(f"AI emotional journey analysis for content length: {len(content_preview)}")
+
+        prompt = f"""You are an expert marriage coaching psychologist. Map the prospect's emotional journey through this sales call.
+
+TRANSCRIPT:
+{content_preview}
+
+Track their emotional progression through 4 phases:
+
+Return ONLY this JSON:
+{{
+  "emotional_journey_phases": [
+    {{
+      "phase": "opening",
+      "emotional_state": "curious",
+      "intensity": 6,
+      "trigger_moment": "Learning about the process",
+      "coaching_note": "How rep should handle this emotion better"
+    }}
+  ],
+  "emotional_patterns": {{
+    "dominant_emotion": "hopeful",
+    "emotional_shifts": ["became more engaged", "showed resistance"],
+    "missed_emotional_opportunities": ["could have addressed fear"]
+  }}
+}}
+
+Focus on marriage crisis emotions: desperation, hope, fear, skepticism, relief."""
+
+        try:
+            response = await self.client.messages.create(
+                model=self.model,
+                max_tokens=1200,
+                messages=[{"role": "user", "content": prompt}]
+            )
+
+            response_text = response.content[0].text.strip()
+            logger.info(f"AI emotional journey response: {response_text}")
+
+            # Clean and extract JSON
+            response_text = response_text.replace('```json', '').replace('```', '').strip()
+
+            import re
+            json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
+            if json_match:
+                response_text = json_match.group(0)
+
+            result = json.loads(response_text)
+
+            # Validate structure
+            if not result.get('emotional_journey_phases'):
+                raise ValueError("Missing emotional_journey_phases")
+
+            logger.info(f"AI emotional journey analysis successful with {len(result['emotional_journey_phases'])} phases")
+            return result
+
+        except Exception as e:
+            logger.error(f"AI emotional journey analysis failed: {str(e)}")
+            # Fallback to keyword approach if AI fails
+            logger.info("Falling back to keyword-based emotional journey")
+            return await self._fallback_keyword_emotional_journey(content)
+
+    async def _fallback_keyword_emotional_journey(self, content):
+        """Fallback keyword-based emotional journey if AI fails"""
+        logger.info("Using keyword-based fallback emotional journey")
 
         content_lower = content.lower()
 
-        # Count emotional keywords with logging
-        emotional_scores = {
-            'desperate': 0,
-            'hopeful': 0,
-            'skeptical': 0,
-            'mixed': 0
-        }
-
-        desperate_emotions = ['desperate', 'urgent', 'crisis', 'falling apart', 'panicking', 'emergency']
-        for keyword in desperate_emotions:
-            if keyword in content_lower:
-                emotional_scores['desperate'] += 1
-                logger.info(f"Found DESPERATE emotion keyword: '{keyword}'")
-
-        hopeful_emotions = ['hopeful', 'excited', 'positive', 'optimistic', 'looking forward', 'can help']
-        for keyword in hopeful_emotions:
-            if keyword in content_lower:
-                emotional_scores['hopeful'] += 1
-                logger.info(f"Found HOPEFUL emotion keyword: '{keyword}'")
-
-        skeptical_emotions = ['skeptical', 'doubt', 'suspicious', 'cautious', 'not sure', 'worried']
-        for keyword in skeptical_emotions:
-            if keyword in content_lower:
-                emotional_scores['skeptical'] += 1
-                logger.info(f"Found SKEPTICAL emotion keyword: '{keyword}'")
-
-        # Determine dominant emotion
-        max_emotion_score = max(emotional_scores.values())
-        if max_emotion_score == 0:
+        # Simple emotion detection
+        if any(word in content_lower for word in ['desperate', 'crisis', 'urgent', 'falling apart']):
+            dominant_emotion = "desperate"
+            phases = [
+                {"phase": "opening", "emotional_state": "panicked", "intensity": 9, "trigger_moment": "Crisis expressed", "coaching_note": "Acknowledge crisis, build hope"},
+                {"phase": "discovery", "emotional_state": "vulnerable", "intensity": 8, "trigger_moment": "Shared struggles", "coaching_note": "Create safe space"},
+                {"phase": "presentation", "emotional_state": "hopeful", "intensity": 7, "trigger_moment": "Heard solutions", "coaching_note": "Build on hope"},
+                {"phase": "closing", "emotional_state": "motivated", "intensity": 8, "trigger_moment": "Ready for action", "coaching_note": "Create urgency"}
+            ]
+        elif any(word in content_lower for word in ['hopeful', 'excited', 'optimistic']):
+            dominant_emotion = "hopeful"
+            phases = [
+                {"phase": "opening", "emotional_state": "optimistic", "intensity": 7, "trigger_moment": "Positive about change", "coaching_note": "Channel optimism"},
+                {"phase": "discovery", "emotional_state": "engaged", "intensity": 8, "trigger_moment": "Active participation", "coaching_note": "Uncover motivations"},
+                {"phase": "presentation", "emotional_state": "excited", "intensity": 8, "trigger_moment": "Seeing potential", "coaching_note": "Paint transformation picture"},
+                {"phase": "closing", "emotional_state": "motivated", "intensity": 9, "trigger_moment": "Ready to begin", "coaching_note": "Close confidently"}
+            ]
+        else:
             dominant_emotion = "mixed"
-            logger.info("No emotional keywords found, defaulting to mixed")
-        else:
-            dominant_emotion = max(emotional_scores, key=emotional_scores.get)
-            logger.info(f"Emotional scores: {emotional_scores}")
-            logger.info(f"Selected dominant emotion: {dominant_emotion} with score {max_emotion_score}")
-
-        # Generate phases based on dominant emotion
-        if dominant_emotion == "desperate":
             phases = [
-                {"phase": "opening", "emotional_state": "panicked", "intensity": 9, "trigger_moment": "Expressed urgency", "coaching_note": "Acknowledge crisis while building hope - avoid rushing to solution"},
-                {"phase": "discovery", "emotional_state": "vulnerable", "intensity": 8, "trigger_moment": "Shared relationship struggles", "coaching_note": "Show empathy and create safe space for deeper sharing"},
-                {"phase": "presentation", "emotional_state": "hopeful", "intensity": 7, "trigger_moment": "Heard solution possibilities", "coaching_note": "Build on this hope with concrete success stories"},
-                {"phase": "closing", "emotional_state": "motivated", "intensity": 8, "trigger_moment": "Ready to take action", "coaching_note": "Strike while motivation is high - create urgency around timeline"}
-            ]
-        elif dominant_emotion == "hopeful":
-            phases = [
-                {"phase": "opening", "emotional_state": "optimistic", "intensity": 7, "trigger_moment": "Positive about change", "coaching_note": "Channel optimism into commitment - avoid overconfidence"},
-                {"phase": "discovery", "emotional_state": "engaged", "intensity": 8, "trigger_moment": "Actively participating", "coaching_note": "Use engagement to uncover deeper motivations"},
-                {"phase": "presentation", "emotional_state": "excited", "intensity": 8, "trigger_moment": "Seeing potential", "coaching_note": "Paint vivid picture of transformed relationship"},
-                {"phase": "closing", "emotional_state": "motivated", "intensity": 9, "trigger_moment": "Eager to begin", "coaching_note": "Close confidently - motivation is at peak level"}
-            ]
-        elif dominant_emotion == "skeptical":
-            phases = [
-                {"phase": "opening", "emotional_state": "guarded", "intensity": 6, "trigger_moment": "Initial hesitation", "coaching_note": "Build credibility slowly - avoid overwhelming with claims"},
-                {"phase": "discovery", "emotional_state": "skeptical", "intensity": 7, "trigger_moment": "Questioning approach", "coaching_note": "Address concerns directly with proof and testimonials"},
-                {"phase": "presentation", "emotional_state": "analytical", "intensity": 6, "trigger_moment": "Evaluating credibility", "coaching_note": "Provide data, guarantees, and risk reversal options"},
-                {"phase": "closing", "emotional_state": "cautious", "intensity": 5, "trigger_moment": "Still uncertain", "coaching_note": "Offer trial or consultation to reduce perceived risk"}
-            ]
-        else:
-            phases = [
-                {"phase": "opening", "emotional_state": "curious", "intensity": 6, "trigger_moment": "Learning about process", "coaching_note": "Build curiosity into engagement through questions"},
-                {"phase": "discovery", "emotional_state": "concerned", "intensity": 7, "trigger_moment": "Discussing challenges", "coaching_note": "Normalize concerns while building urgency around consequences"},
-                {"phase": "presentation", "emotional_state": "interested", "intensity": 7, "trigger_moment": "Considering options", "coaching_note": "Present clear value proposition and differentiation"},
-                {"phase": "closing", "emotional_state": "thoughtful", "intensity": 6, "trigger_moment": "Weighing decision", "coaching_note": "Help with decision-making process - provide framework"}
+                {"phase": "opening", "emotional_state": "curious", "intensity": 6, "trigger_moment": "Learning process", "coaching_note": "Build engagement"},
+                {"phase": "discovery", "emotional_state": "concerned", "intensity": 7, "trigger_moment": "Discussing challenges", "coaching_note": "Address concerns"},
+                {"phase": "presentation", "emotional_state": "interested", "intensity": 7, "trigger_moment": "Considering options", "coaching_note": "Clear value proposition"},
+                {"phase": "closing", "emotional_state": "thoughtful", "intensity": 6, "trigger_moment": "Weighing decision", "coaching_note": "Help decision process"}
             ]
 
-        result = {
+        return {
             "emotional_journey_phases": phases,
             "emotional_patterns": {
                 "dominant_emotion": dominant_emotion,
-                "emotional_shifts": ["Initial state to engaged", "Engaged to decision-ready"],
-                "missed_emotional_opportunities": ["Could have addressed underlying concerns"]
+                "emotional_shifts": ["Initial to engaged", "Engaged to decision-ready"],
+                "missed_emotional_opportunities": ["Keyword-based fallback analysis"]
             }
         }
 
-        logger.info(f"HARDCODED emotional journey with {len(phases)} phases, dominant emotion: {dominant_emotion}")
-        return result
-
     async def classify_marriage_archetype(self, content):
-        """Classify into marriage coaching specific archetypes"""
+        """Classify into marriage coaching specific archetypes using Claude Sonnet 4.5"""
 
-        # EMERGENCY HARDCODED APPROACH - bypass AI temporarily
-        logger.info("USING EMERGENCY HARDCODED ARCHETYPE CLASSIFICATION")
+        # Use shorter content for reliable analysis
+        content_preview = content[:3000] if len(content) > 3000 else content
+        logger.info(f"AI archetype analysis for content length: {len(content_preview)}")
+
+        prompt = f"""You are an expert marriage coaching sales psychologist. Analyze this transcript and classify the prospect's psychological archetype.
+
+TRANSCRIPT:
+{content_preview}
+
+MARRIAGE COACHING ARCHETYPES:
+1. DESPERATE SAVER - High urgency, crisis-driven, time pressure language
+2. ANALYTICAL RESEARCHER - Wants data, statistics, success rates, proof
+3. HOPEFUL BUILDER - Optimistic, growth-focused, investment-oriented
+4. SKEPTICAL EVALUATOR - Cautious, mentions scams/trust issues
+5. CONSENSUS SEEKER - Needs spouse approval, collaborative language
+
+Return ONLY this JSON:
+{{
+  "primary_archetype": "DESPERATE SAVER",
+  "confidence_score": 0.85,
+  "supporting_quotes": ["quote from transcript", "another quote"],
+  "behavioral_indicators": ["behavior pattern 1", "behavior pattern 2"]
+}}"""
+
+        try:
+            response = await self.client.messages.create(
+                model=self.model,
+                max_tokens=800,
+                messages=[{"role": "user", "content": prompt}]
+            )
+
+            response_text = response.content[0].text.strip()
+            logger.info(f"AI archetype response: {response_text}")
+
+            # Clean and extract JSON
+            response_text = response_text.replace('```json', '').replace('```', '').strip()
+
+            import re
+            json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
+            if json_match:
+                response_text = json_match.group(0)
+
+            result = json.loads(response_text)
+
+            # Add missing fields for frontend compatibility
+            result.setdefault('secondary_archetype', 'Hopeful Builder')
+            result.setdefault('confidence_score', 0.75)
+            result.setdefault('archetype_evidence', {
+                "supporting_quotes": result.get('supporting_quotes', []),
+                "behavioral_indicators": result.get('behavioral_indicators', [])
+            })
+
+            logger.info(f"AI archetype classification successful: {result.get('primary_archetype')}")
+            return result
+
+        except Exception as e:
+            logger.error(f"AI archetype analysis failed: {str(e)}")
+            # Fallback to keyword approach if AI fails
+            logger.info("Falling back to keyword-based classification")
+            return await self._fallback_keyword_archetype(content)
+
+    async def _fallback_keyword_archetype(self, content):
+        """Fallback keyword-based archetype classification if AI fails"""
+        logger.info("Using keyword-based fallback archetype classification")
 
         content_lower = content.lower()
-
-        # More specific keyword matching with logging
         archetype_scores = {
             'DESPERATE SAVER': 0,
             'ANALYTICAL RESEARCHER': 0,
@@ -549,59 +631,31 @@ Respond with ONLY valid JSON matching this format."""
             'HOPEFUL BUILDER': 0
         }
 
-        # Count matches for each archetype
-        desperate_keywords = ['urgent', 'running out of time', 'desperate', 'crisis', 'emergency', 'last chance', 'falling apart']
-        for keyword in desperate_keywords:
-            if keyword in content_lower:
-                archetype_scores['DESPERATE SAVER'] += 1
-                logger.info(f"Found DESPERATE keyword: '{keyword}'")
+        # Simplified keyword matching
+        if any(word in content_lower for word in ['urgent', 'crisis', 'desperate', 'emergency', 'last chance']):
+            archetype_scores['DESPERATE SAVER'] += 3
+        if any(word in content_lower for word in ['statistics', 'success rate', 'data', 'proof', 'evidence']):
+            archetype_scores['ANALYTICAL RESEARCHER'] += 3
+        if any(word in content_lower for word in ['scam', 'too good', 'burned before', 'suspicious']):
+            archetype_scores['SKEPTICAL EVALUATOR'] += 3
+        if any(word in content_lower for word in ['my spouse', 'my partner', 'we need to discuss']):
+            archetype_scores['CONSENSUS SEEKER'] += 3
+        if any(word in content_lower for word in ['excited', 'hopeful', 'looking forward', 'improve']):
+            archetype_scores['HOPEFUL BUILDER'] += 3
 
-        analytical_keywords = ['statistics', 'success rate', 'research shows', 'data', 'proof', 'evidence', 'numbers']
-        for keyword in analytical_keywords:
-            if keyword in content_lower:
-                archetype_scores['ANALYTICAL RESEARCHER'] += 1
-                logger.info(f"Found ANALYTICAL keyword: '{keyword}'")
-
-        skeptical_keywords = ['scam', 'too good to be true', 'burned before', 'suspicious', 'dont trust']
-        for keyword in skeptical_keywords:
-            if keyword in content_lower:
-                archetype_scores['SKEPTICAL EVALUATOR'] += 1
-                logger.info(f"Found SKEPTICAL keyword: '{keyword}'")
-
-        consensus_keywords = ['my spouse', 'my partner', 'we need to discuss', 'talk to my wife', 'talk to my husband']
-        for keyword in consensus_keywords:
-            if keyword in content_lower:
-                archetype_scores['CONSENSUS SEEKER'] += 1
-                logger.info(f"Found CONSENSUS keyword: '{keyword}'")
-
-        hopeful_keywords = ['excited', 'hopeful', 'looking forward', 'improve our relationship', 'build together']
-        for keyword in hopeful_keywords:
-            if keyword in content_lower:
-                archetype_scores['HOPEFUL BUILDER'] += 1
-                logger.info(f"Found HOPEFUL keyword: '{keyword}'")
-
-        # Find highest scoring archetype
+        # Select highest scoring archetype
         max_score = max(archetype_scores.values())
-        if max_score == 0:
-            archetype = 'HOPEFUL BUILDER'  # Default
-            logger.info("No keywords matched, defaulting to HOPEFUL BUILDER")
-        else:
-            archetype = max(archetype_scores, key=archetype_scores.get)
-            logger.info(f"Archetype scores: {archetype_scores}")
-            logger.info(f"Selected archetype: {archetype} with score {max_score}")
+        archetype = 'HOPEFUL BUILDER' if max_score == 0 else max(archetype_scores, key=archetype_scores.get)
 
-        result = {
+        return {
             "primary_archetype": archetype,
-            "confidence_score": 0.85,
+            "confidence_score": 0.70,
             "secondary_archetype": "Hopeful Builder",
             "archetype_evidence": {
-                "supporting_quotes": ["Keyword-based classification"],
-                "behavioral_indicators": ["Language pattern analysis"]
+                "supporting_quotes": ["Keyword-based fallback analysis"],
+                "behavioral_indicators": ["Pattern matching classification"]
             }
         }
-
-        logger.info(f"HARDCODED archetype classification: {archetype}")
-        return result
 
     def determine_coaching_urgency(self, success_probability):
         """
