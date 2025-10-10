@@ -8,10 +8,11 @@ import os
 import asyncio
 from datetime import datetime
 import logging
+import time
 from http.server import BaseHTTPRequestHandler
 
 try:
-    from anthropic import AsyncAnthropic
+    from anthropic import AsyncAnthropic, APIError, RateLimitError, APITimeoutError
 except ImportError:
     pass
 
@@ -21,10 +22,89 @@ logger = logging.getLogger(__name__)
 class MarriageCoachingAnalyzer:
     """Surgical marriage coaching sales analyzer with framework from proven systems"""
 
-    def __init__(self, api_key):
-        self.client = AsyncAnthropic(api_key=api_key)
+    def __init__(self, api_key, max_retries=3, timeout=120):
+        self.client = AsyncAnthropic(api_key=api_key, timeout=timeout)
         # Model configuration - easy to update when models change
         self.model = "claude-sonnet-4-5"  # Upgraded to Claude Sonnet 4.5 (latest)
+        self.max_retries = max_retries
+        self.timeout = timeout
+
+    async def _call_api_with_retry(self, prompt, max_tokens, operation_name="API call"):
+        """
+        Make API call with exponential backoff retry logic
+
+        Args:
+            prompt: The prompt to send to Claude
+            max_tokens: Maximum tokens for response
+            operation_name: Name of the operation for logging
+
+        Returns:
+            API response text
+
+        Raises:
+            Exception: If all retries fail
+        """
+        last_error = None
+
+        for attempt in range(self.max_retries):
+            try:
+                logger.info(f"{operation_name} - Attempt {attempt + 1}/{self.max_retries}")
+
+                response = await self.client.messages.create(
+                    model=self.model,
+                    max_tokens=max_tokens,
+                    messages=[{"role": "user", "content": prompt}]
+                )
+
+                response_text = response.content[0].text.strip()
+                logger.info(f"{operation_name} - Success on attempt {attempt + 1}")
+                return response_text
+
+            except RateLimitError as e:
+                last_error = e
+                wait_time = (2 ** attempt) * 2  # Exponential backoff: 2s, 4s, 8s
+                logger.warning(f"{operation_name} - Rate limit hit on attempt {attempt + 1}. Waiting {wait_time}s before retry...")
+                if attempt < self.max_retries - 1:
+                    await asyncio.sleep(wait_time)
+                else:
+                    logger.error(f"{operation_name} - Rate limit exceeded after {self.max_retries} attempts")
+
+            except APITimeoutError as e:
+                last_error = e
+                logger.warning(f"{operation_name} - Timeout on attempt {attempt + 1}/{self.max_retries}")
+                if attempt < self.max_retries - 1:
+                    wait_time = 2 ** attempt  # Exponential backoff: 1s, 2s, 4s
+                    await asyncio.sleep(wait_time)
+                else:
+                    logger.error(f"{operation_name} - Timeout after {self.max_retries} attempts")
+
+            except APIError as e:
+                last_error = e
+                error_code = getattr(e, 'status_code', 'unknown')
+                logger.warning(f"{operation_name} - API error ({error_code}) on attempt {attempt + 1}: {str(e)}")
+
+                # Don't retry on client errors (4xx), only server errors (5xx)
+                if error_code and str(error_code).startswith('4'):
+                    logger.error(f"{operation_name} - Client error, not retrying")
+                    raise
+
+                if attempt < self.max_retries - 1:
+                    wait_time = 2 ** attempt
+                    await asyncio.sleep(wait_time)
+                else:
+                    logger.error(f"{operation_name} - API error persisted after {self.max_retries} attempts")
+
+            except Exception as e:
+                last_error = e
+                logger.error(f"{operation_name} - Unexpected error on attempt {attempt + 1}: {type(e).__name__}: {str(e)}")
+                if attempt < self.max_retries - 1:
+                    wait_time = 2 ** attempt
+                    await asyncio.sleep(wait_time)
+                else:
+                    logger.error(f"{operation_name} - Failed after {self.max_retries} attempts")
+
+        # If we get here, all retries failed
+        raise Exception(f"{operation_name} failed after {self.max_retries} attempts: {str(last_error)}")
 
     async def analyze_marriage_coaching_call(self, content, filename="transcript.txt", client_name=None, closer_name=None, zoom_meeting_id=None, call_date=None):
         """Complete marriage coaching sales analysis"""
@@ -142,20 +222,19 @@ Rate each category 1-10 and provide brief analysis:
 Respond with ONLY valid JSON matching this format."""
 
         try:
-            response = await self.client.messages.create(
-                model=self.model,
+            response_text = await self._call_api_with_retry(
+                prompt=prompt,
                 max_tokens=3500,
-                messages=[{"role": "user", "content": prompt}]
+                operation_name="Sales Framework Analysis"
             )
 
-            response_text = response.content[0].text.strip()
             if response_text.startswith('```json'):
                 response_text = response_text.replace('```json', '').replace('```', '').strip()
 
             return json.loads(response_text)
 
         except Exception as e:
-            logger.error(f"Sales framework analysis error: {str(e)}")
+            logger.error(f"Sales framework analysis error after retries: {str(e)}")
             return self.get_fallback_sales_framework()
 
     async def analyze_psychological_profile(self, content):
@@ -210,20 +289,19 @@ Rate their Big Five personality traits (1-100):
 Respond with ONLY valid JSON matching this format."""
 
         try:
-            response = await self.client.messages.create(
-                model=self.model,
+            response_text = await self._call_api_with_retry(
+                prompt=prompt,
                 max_tokens=2000,
-                messages=[{"role": "user", "content": prompt}]
+                operation_name="Psychological Profile Analysis"
             )
 
-            response_text = response.content[0].text.strip()
             if response_text.startswith('```json'):
                 response_text = response_text.replace('```json', '').replace('```', '').strip()
 
             return json.loads(response_text)
 
         except Exception as e:
-            logger.error(f"Psychological analysis error: {str(e)}")
+            logger.error(f"Psychological analysis error after retries: {str(e)}")
             return self.get_fallback_psychological_analysis()
 
     async def analyze_marriage_coaching_specifics(self, content):
@@ -430,20 +508,19 @@ Respond with ONLY valid JSON matching this format."""
         """
 
         try:
-            response = await self.client.messages.create(
-                model=self.model,
+            response_text = await self._call_api_with_retry(
+                prompt=prompt,
                 max_tokens=3500,
-                messages=[{"role": "user", "content": prompt}]
+                operation_name="Marriage Coaching Specifics Analysis"
             )
 
-            response_text = response.content[0].text.strip()
             if response_text.startswith('```json'):
                 response_text = response_text.replace('```json', '').replace('```', '').strip()
 
             return json.loads(response_text)
 
         except Exception as e:
-            logger.error(f"Marriage coaching analysis error: {str(e)}")
+            logger.error(f"Marriage coaching analysis error after retries: {str(e)}")
             return self.get_fallback_marriage_analysis()
 
     async def analyze_emotional_journey(self, content):
@@ -481,13 +558,12 @@ Return ONLY this JSON:
 Focus on marriage crisis emotions: desperation, hope, fear, skepticism, relief."""
 
         try:
-            response = await self.client.messages.create(
-                model=self.model,
+            response_text = await self._call_api_with_retry(
+                prompt=prompt,
                 max_tokens=1200,
-                messages=[{"role": "user", "content": prompt}]
+                operation_name="Emotional Journey Analysis"
             )
 
-            response_text = response.content[0].text.strip()
             logger.info(f"AI emotional journey response: {response_text}")
 
             # Clean and extract JSON
@@ -582,13 +658,12 @@ Return ONLY this JSON:
 }}"""
 
         try:
-            response = await self.client.messages.create(
-                model=self.model,
+            response_text = await self._call_api_with_retry(
+                prompt=prompt,
                 max_tokens=800,
-                messages=[{"role": "user", "content": prompt}]
+                operation_name="Archetype Classification"
             )
 
-            response_text = response.content[0].text.strip()
             logger.info(f"AI archetype response: {response_text}")
 
             # Clean and extract JSON
@@ -854,20 +929,19 @@ Return ONLY this JSON:
         """
 
         try:
-            response = await self.client.messages.create(
-                model=self.model,
+            response_text = await self._call_api_with_retry(
+                prompt=prompt,
                 max_tokens=4000,
-                messages=[{"role": "user", "content": prompt}]
+                operation_name="Talk Track Improvements Analysis"
             )
 
-            response_text = response.content[0].text.strip()
             if response_text.startswith('```json'):
                 response_text = response_text.replace('```json', '').replace('```', '').strip()
 
             return json.loads(response_text)
 
         except Exception as e:
-            logger.error(f"Talk track analysis error: {str(e)}")
+            logger.error(f"Talk track analysis error after retries: {str(e)}")
             return self.get_fallback_talk_track()
 
     def calculate_marriage_success_probability(self, sales_framework, marriage_analysis, archetype):
@@ -1079,7 +1153,12 @@ class handler(BaseHTTPRequestHandler):
                 })
                 return
 
-            analyzer = MarriageCoachingAnalyzer(api_key)
+            # Initialize analyzer with retry configuration
+            analyzer = MarriageCoachingAnalyzer(
+                api_key=api_key,
+                max_retries=3,  # Retry up to 3 times
+                timeout=120  # 2 minute timeout per request
+            )
             result = asyncio.run(analyzer.analyze_marriage_coaching_call(content, filename))
 
             self.send_response(200)
