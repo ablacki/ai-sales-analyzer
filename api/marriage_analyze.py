@@ -23,6 +23,8 @@ class MarriageCoachingAnalyzer:
 
     def __init__(self, api_key):
         self.client = AsyncAnthropic(api_key=api_key)
+        # Model configuration - easy to update when models change
+        self.model = "claude-3-5-haiku-20241022"  # Updated to current model
 
     async def analyze_marriage_coaching_call(self, content, filename="transcript.txt", client_name=None, closer_name=None, zoom_meeting_id=None, call_date=None):
         """Complete marriage coaching sales analysis"""
@@ -141,7 +143,7 @@ Respond with ONLY valid JSON matching this format."""
 
         try:
             response = await self.client.messages.create(
-                model="claude-3-5-sonnet-20241022",
+                model=self.model,
                 max_tokens=3500,
                 messages=[{"role": "user", "content": prompt}]
             )
@@ -209,7 +211,7 @@ Respond with ONLY valid JSON matching this format."""
 
         try:
             response = await self.client.messages.create(
-                model="claude-3-5-sonnet-20241022",
+                model=self.model,
                 max_tokens=2000,
                 messages=[{"role": "user", "content": prompt}]
             )
@@ -429,7 +431,7 @@ Respond with ONLY valid JSON matching this format."""
 
         try:
             response = await self.client.messages.create(
-                model="claude-3-5-sonnet-20241022",
+                model=self.model,
                 max_tokens=3500,
                 messages=[{"role": "user", "content": prompt}]
             )
@@ -799,7 +801,7 @@ Respond with ONLY valid JSON matching this format."""
 
         try:
             response = await self.client.messages.create(
-                model="claude-3-5-sonnet-20241022",
+                model=self.model,
                 max_tokens=4000,
                 messages=[{"role": "user", "content": prompt}]
             )
