@@ -32,53 +32,76 @@ def parse_vtt_content(content):
 
     Returns formatted text with timestamps preserved for temporal analysis.
     """
-    if not content.startswith('WEBVTT'):
+    # Check if this is VTT content (case insensitive, allow whitespace)
+    if not content.strip().upper().startswith('WEBVTT'):
         # Not a VTT file, return as-is
+        logger.info("Not VTT format - processing as plain text")
         return content, False
 
     logger.info("Detected VTT format - parsing with timestamp preservation")
+    logger.info(f"Original content length: {len(content)} characters")
 
-    # Split by double newlines to get individual caption blocks
-    blocks = re.split(r'\n\n+', content.strip())
+    # Split by newlines first
+    lines = content.split('\n')
 
     formatted_lines = []
+    current_timestamp = None
+    current_text_lines = []
     total_duration = None
 
-    for block in blocks:
-        lines = block.strip().split('\n')
+    # More flexible timestamp pattern (handles various VTT formats)
+    timestamp_pattern = r'(\d{1,2}:\d{2}:\d{2}[.,]\d{3})\s*-->\s*(\d{1,2}:\d{2}:\d{2}[.,]\d{3})'
 
-        # Skip the WEBVTT header
-        if lines[0].startswith('WEBVTT'):
+    for line in lines:
+        line = line.strip()
+
+        # Skip empty lines, WEBVTT header, and numeric cue identifiers
+        if not line or line.upper().startswith('WEBVTT') or line.isdigit():
+            # If we have accumulated text, save it
+            if current_timestamp and current_text_lines:
+                text = ' '.join(current_text_lines)
+                if text:
+                    formatted_lines.append(f"[{current_timestamp}] {text}")
+                current_text_lines = []
             continue
 
-        # Look for timestamp line (format: 00:00:01.000 --> 00:00:03.500)
-        timestamp_pattern = r'(\d{2}:\d{2}:\d{2}\.\d{3})\s+-->\s+(\d{2}:\d{2}:\d{2}\.\d{3})'
+        # Check if this is a timestamp line
+        timestamp_match = re.match(timestamp_pattern, line)
+        if timestamp_match:
+            # Save previous segment if exists
+            if current_timestamp and current_text_lines:
+                text = ' '.join(current_text_lines)
+                if text:
+                    formatted_lines.append(f"[{current_timestamp}] {text}")
 
-        for i, line in enumerate(lines):
-            timestamp_match = re.match(timestamp_pattern, line)
-            if timestamp_match:
-                start_time = timestamp_match.group(1)
-                end_time = timestamp_match.group(2)
+            # Start new segment
+            start_time = timestamp_match.group(1).replace(',', '.')
+            end_time = timestamp_match.group(2).replace(',', '.')
+            current_timestamp = convert_timestamp_to_simple(start_time)
+            total_duration = end_time
+            current_text_lines = []
+        else:
+            # This is text content
+            if line and not line.startswith('NOTE'):  # Skip VTT NOTE lines
+                current_text_lines.append(line)
 
-                # Convert to simpler format (MM:SS)
-                start_simple = convert_timestamp_to_simple(start_time)
-
-                # Get the text content (everything after the timestamp line)
-                text_content = '\n'.join(lines[i+1:]).strip()
-
-                if text_content:
-                    # Format: [MM:SS] Speaker: Text
-                    formatted_lines.append(f"[{start_simple}] {text_content}")
-
-                # Track total duration
-                total_duration = end_time
-                break
+    # Don't forget the last segment
+    if current_timestamp and current_text_lines:
+        text = ' '.join(current_text_lines)
+        if text:
+            formatted_lines.append(f"[{current_timestamp}] {text}")
 
     formatted_text = '\n'.join(formatted_lines)
 
     logger.info(f"VTT parsed: {len(formatted_lines)} timestamped segments")
+    logger.info(f"Formatted text length: {len(formatted_text)} characters")
     if total_duration:
         logger.info(f"Call duration: {convert_timestamp_to_simple(total_duration)}")
+
+    # If parsing failed, return original content
+    if len(formatted_lines) == 0:
+        logger.warning("VTT parsing produced no output - returning original content")
+        return content, False
 
     return formatted_text, True
 
