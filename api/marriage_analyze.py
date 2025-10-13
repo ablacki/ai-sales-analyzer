@@ -107,14 +107,19 @@ def parse_vtt_content(content):
 
 def convert_timestamp_to_simple(timestamp):
     """Convert 00:00:01.000 to 00:01 (MM:SS format)"""
-    parts = timestamp.split(':')
-    if len(parts) == 3:
-        hours = int(parts[0])
-        minutes = int(parts[1])
-        seconds = int(parts[2].split('.')[0])
+    try:
+        parts = timestamp.split(':')
+        if len(parts) == 3:
+            hours = int(parts[0])
+            minutes = int(parts[1])
+            # Handle both . and , as decimal separator
+            seconds_part = parts[2].replace(',', '.')
+            seconds = int(float(seconds_part))
 
-        total_minutes = hours * 60 + minutes
-        return f"{total_minutes:02d}:{seconds:02d}"
+            total_minutes = hours * 60 + minutes
+            return f"{total_minutes:02d}:{seconds:02d}"
+    except (ValueError, IndexError) as e:
+        logger.warning(f"Failed to parse timestamp '{timestamp}': {e}")
     return timestamp
 
 class MarriageCoachingAnalyzer:
@@ -211,8 +216,13 @@ class MarriageCoachingAnalyzer:
             # Parse VTT format if detected
             content, is_vtt = parse_vtt_content(content)
 
-            if len(content) > 12000:
-                content = content[:12000] + "... [Content truncated for analysis]"
+            logger.info(f"Content length after VTT parsing: {len(content)} characters")
+
+            # Increased limit to handle full sales calls (45-60 min calls = ~50k chars)
+            # Claude can handle up to ~200k tokens (~800k characters)
+            if len(content) > 100000:
+                logger.warning(f"Content very long ({len(content)} chars), truncating to 100k")
+                content = content[:100000] + "\n\n... [Content truncated for analysis - call exceeded 100k characters]"
 
             # Run comprehensive analysis
             sales_framework_analysis = await self.analyze_sales_framework(content)
