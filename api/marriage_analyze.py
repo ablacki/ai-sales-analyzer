@@ -9,6 +9,7 @@ import asyncio
 from datetime import datetime
 import logging
 import time
+import re
 from http.server import BaseHTTPRequestHandler
 
 try:
@@ -18,6 +19,80 @@ except ImportError:
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+def parse_vtt_content(content):
+    """
+    Parse VTT (WebVTT) format and convert to timestamped text.
+
+    VTT format example:
+    WEBVTT
+
+    00:00:01.000 --> 00:00:03.500
+    John: Hi, thanks for joining!
+
+    Returns formatted text with timestamps preserved for temporal analysis.
+    """
+    if not content.startswith('WEBVTT'):
+        # Not a VTT file, return as-is
+        return content, False
+
+    logger.info("Detected VTT format - parsing with timestamp preservation")
+
+    # Split by double newlines to get individual caption blocks
+    blocks = re.split(r'\n\n+', content.strip())
+
+    formatted_lines = []
+    total_duration = None
+
+    for block in blocks:
+        lines = block.strip().split('\n')
+
+        # Skip the WEBVTT header
+        if lines[0].startswith('WEBVTT'):
+            continue
+
+        # Look for timestamp line (format: 00:00:01.000 --> 00:00:03.500)
+        timestamp_pattern = r'(\d{2}:\d{2}:\d{2}\.\d{3})\s+-->\s+(\d{2}:\d{2}:\d{2}\.\d{3})'
+
+        for i, line in enumerate(lines):
+            timestamp_match = re.match(timestamp_pattern, line)
+            if timestamp_match:
+                start_time = timestamp_match.group(1)
+                end_time = timestamp_match.group(2)
+
+                # Convert to simpler format (MM:SS)
+                start_simple = convert_timestamp_to_simple(start_time)
+
+                # Get the text content (everything after the timestamp line)
+                text_content = '\n'.join(lines[i+1:]).strip()
+
+                if text_content:
+                    # Format: [MM:SS] Speaker: Text
+                    formatted_lines.append(f"[{start_simple}] {text_content}")
+
+                # Track total duration
+                total_duration = end_time
+                break
+
+    formatted_text = '\n'.join(formatted_lines)
+
+    logger.info(f"VTT parsed: {len(formatted_lines)} timestamped segments")
+    if total_duration:
+        logger.info(f"Call duration: {convert_timestamp_to_simple(total_duration)}")
+
+    return formatted_text, True
+
+def convert_timestamp_to_simple(timestamp):
+    """Convert 00:00:01.000 to 00:01 (MM:SS format)"""
+    parts = timestamp.split(':')
+    if len(parts) == 3:
+        hours = int(parts[0])
+        minutes = int(parts[1])
+        seconds = int(parts[2].split('.')[0])
+
+        total_minutes = hours * 60 + minutes
+        return f"{total_minutes:02d}:{seconds:02d}"
+    return timestamp
 
 class MarriageCoachingAnalyzer:
     """Surgical marriage coaching sales analyzer with framework from proven systems"""
@@ -107,9 +182,12 @@ class MarriageCoachingAnalyzer:
         raise Exception(f"{operation_name} failed after {self.max_retries} attempts: {str(last_error)}")
 
     async def analyze_marriage_coaching_call(self, content, filename="transcript.txt", client_name=None, closer_name=None, zoom_meeting_id=None, call_date=None):
-        """Complete marriage coaching sales analysis"""
+        """Complete marriage coaching sales analysis with VTT support"""
 
         try:
+            # Parse VTT format if detected
+            content, is_vtt = parse_vtt_content(content)
+
             if len(content) > 12000:
                 content = content[:12000] + "... [Content truncated for analysis]"
 
@@ -173,46 +251,54 @@ class MarriageCoachingAnalyzer:
             }
 
     async def analyze_sales_framework(self, content):
-        """Apply the proven 6-category sales framework"""
+        """Apply the proven 6-category sales framework with temporal analysis"""
 
         prompt = f"""Analyze this marriage coaching sales call and rate performance in 6 categories.
+
+IMPORTANT: Transcript may include timestamps in [MM:SS] format. Use timestamps to provide PRECISE coaching feedback with exact moments to review.
 
 TRANSCRIPT:
 {content}
 
-Rate each category 1-10 and provide brief analysis:
+Rate each category 1-10 and provide brief analysis WITH TIMESTAMPS when available:
 
 {{
   "framework_scores": {{
     "call_control": {{
       "score": 7,
       "analysis": "Rep maintained good conversation flow",
-      "coaching_fix": "Ask more guiding questions"
+      "coaching_fix": "Ask more guiding questions",
+      "key_moments": ["[12:30] Lost control when prospect went off-topic", "[25:15] Good redirect back to solution"]
     }},
     "discovery_depth": {{
       "score": 5,
       "analysis": "Surface-level problem identification",
-      "coaching_fix": "Dig deeper into marriage pain points"
+      "coaching_fix": "Dig deeper into marriage pain points",
+      "key_moments": ["[08:45] Missed opportunity to explore emotional impact", "[15:20] Good probing question"]
     }},
     "empathetic_confrontation": {{
       "score": 6,
       "analysis": "Showed empathy but missed confrontation opportunities",
-      "coaching_fix": "Balance understanding with accountability"
+      "coaching_fix": "Balance understanding with accountability",
+      "key_moments": ["[18:30] Too much empathy, avoided confrontation", "[22:10] Missed chance to show prospect his role"]
     }},
     "objection_handling": {{
       "score": 4,
       "analysis": "Struggled with price objections",
-      "coaching_fix": "Use investment reframes not cost justification"
+      "coaching_fix": "Use investment reframes not cost justification",
+      "key_moments": ["[28:45] Price objection handled poorly - justified instead of reframed"]
     }},
     "value_positioning": {{
       "score": 3,
       "analysis": "Weak marriage value positioning",
-      "coaching_fix": "Position marriage as most important investment"
+      "coaching_fix": "Position marriage as most important investment",
+      "key_moments": ["[20:15] Weak value statement - sounded like expense not investment"]
     }},
     "closing_strength": {{
       "score": 2,
       "analysis": "No clear commitment requests",
-      "coaching_fix": "Use assumptive close techniques"
+      "coaching_fix": "Use assumptive close techniques",
+      "key_moments": ["[32:40] CRITICAL MISS - Client showed buying signal but rep didn't close"]
     }}
   }},
   "total_score": 27,
@@ -309,6 +395,8 @@ Respond with ONLY valid JSON matching this format."""
 
         prompt = f"""
         Analyze this marriage coaching sales call for marriage-specific elements and coaching effectiveness.
+
+        IMPORTANT: Transcript may include timestamps in [MM:SS] format. Include timestamps in ALL coaching feedback for precise review moments.
 
         TRANSCRIPT:
         {content}
@@ -532,30 +620,47 @@ Respond with ONLY valid JSON matching this format."""
 
         prompt = f"""You are an expert marriage coaching psychologist. Map the prospect's emotional journey through this sales call.
 
+IMPORTANT: Transcript may include timestamps in [MM:SS] format. Use timestamps to track WHEN emotional shifts occur.
+
 TRANSCRIPT:
 {content_preview}
 
-Track their emotional progression through 4 phases:
+Track their emotional progression through 4 phases with PRECISE timestamps:
 
 Return ONLY this JSON:
 {{
   "emotional_journey_phases": [
     {{
       "phase": "opening",
+      "timestamp": "[02:15]",
       "emotional_state": "curious",
       "intensity": 6,
-      "trigger_moment": "Learning about the process",
-      "coaching_note": "How rep should handle this emotion better"
+      "trigger_moment": "[02:15] Learning about the process",
+      "coaching_note": "Rep could have used curiosity to build more engagement - ask more questions"
+    }},
+    {{
+      "phase": "discovery",
+      "timestamp": "[08:30]",
+      "emotional_state": "vulnerable",
+      "intensity": 8,
+      "trigger_moment": "[08:30] Shared deep marriage pain",
+      "coaching_note": "Peak emotional moment - rep should have acknowledged and used for urgency"
     }}
   ],
   "emotional_patterns": {{
     "dominant_emotion": "hopeful",
-    "emotional_shifts": ["became more engaged", "showed resistance"],
-    "missed_emotional_opportunities": ["could have addressed fear"]
+    "emotional_shifts": [
+      "[12:45] Became more engaged when solution presented",
+      "[22:10] Showed resistance after price mention"
+    ],
+    "missed_emotional_opportunities": [
+      "[15:20] Client expressed fear but rep didn't address it",
+      "[28:40] High emotional state - rep should have closed here"
+    ]
   }}
 }}
 
-Focus on marriage crisis emotions: desperation, hope, fear, skepticism, relief."""
+Focus on marriage crisis emotions: desperation, hope, fear, skepticism, relief. Include timestamps for ALL key moments."""
 
         try:
             response_text = await self._call_api_with_retry(
