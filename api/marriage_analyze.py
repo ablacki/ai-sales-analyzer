@@ -10,6 +10,7 @@ from datetime import datetime
 import logging
 import time
 import re
+import hashlib
 from http.server import BaseHTTPRequestHandler
 
 try:
@@ -156,6 +157,7 @@ class MarriageCoachingAnalyzer:
                 response = await self.client.messages.create(
                     model=self.model,
                     max_tokens=max_tokens,
+                    temperature=0.3,  # Low temperature for consistent, deterministic scoring
                     messages=[{"role": "user", "content": prompt}]
                 )
 
@@ -217,6 +219,10 @@ class MarriageCoachingAnalyzer:
             content, is_vtt = parse_vtt_content(content)
 
             logger.info(f"Content length after VTT parsing: {len(content)} characters")
+
+            # Generate content hash for consistency tracking
+            content_hash = hashlib.md5(content.encode()).hexdigest()[:8]
+            logger.info(f"Content hash: {content_hash} - Use this to identify duplicate analyses")
 
             # Increased limit to handle full sales calls (45-60 min calls = ~50k chars)
             # Claude can handle up to ~200k tokens (~800k characters)
@@ -286,14 +292,21 @@ class MarriageCoachingAnalyzer:
     async def analyze_sales_framework(self, content):
         """Apply the proven 6-category sales framework with temporal analysis"""
 
-        prompt = f"""Analyze this marriage coaching sales call and rate performance in 6 categories.
+        prompt = f"""Analyze this marriage coaching sales call and rate performance in 6 categories using the STRICT SCORING RUBRIC below.
 
 IMPORTANT: Transcript may include timestamps in [MM:SS] format. Use timestamps to provide PRECISE coaching feedback with exact moments to review.
+
+SCORING RUBRIC (use these exact criteria for consistency):
+- 9-10: Exceptional - Demonstrates mastery, multiple strong examples
+- 7-8: Good - Solid performance, few minor improvements needed
+- 5-6: Average - Adequate but significant room for improvement
+- 3-4: Below Average - Major gaps, needs immediate coaching
+- 1-2: Poor - Critical failures, requires urgent intervention
 
 TRANSCRIPT:
 {content}
 
-Rate each category 1-10 and provide brief analysis WITH TIMESTAMPS when available:
+Rate each category 1-10 using the rubric above. Be CONSISTENT - same quality should get same score:
 
 {{
   "framework_scores": {{
