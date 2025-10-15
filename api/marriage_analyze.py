@@ -306,7 +306,21 @@ SCORING RUBRIC (use these exact criteria for consistency):
 TRANSCRIPT:
 {content}
 
-Rate each category 1-10 using the rubric above. Be CONSISTENT - same quality should get same score:
+Rate each category 1-10 using the rubric above. Be CONSISTENT - same quality should get same score.
+
+CRITICAL: For "relationship_dynamics_education" - ONLY flag MISSED opportunities when:
+1. Prospect's story REVEALS a dynamic (e.g., describes shutting down when husband yells)
+2. Rep did NOT teach the principle in that moment
+3. Teaching would have been contextually appropriate (not over-educating)
+
+Core principles to watch for:
+- Emotion-first processing: Wife feels what husband says before processing the words
+- Emotional priming: Tone/demeanor sets receptivity for what follows (door-slamming vs. whistling example)
+- Defensive triggers: How emotional state colors interpretation of words
+- Communication patterns: How small interactions compound over time
+
+High score (8-10): Rep identifies dynamics in prospect's story and teaches principles at perfect moments
+Low score (1-4): Rep misses multiple clear teaching opportunities when prospect reveals dynamics
 
 {{
   "framework_scores": {{
@@ -345,9 +359,19 @@ Rate each category 1-10 using the rubric above. Be CONSISTENT - same quality sho
       "analysis": "No clear commitment requests",
       "coaching_fix": "Use assumptive close techniques",
       "key_moments": ["[32:40] CRITICAL MISS - Client showed buying signal but rep didn't close"]
+    }},
+    "relationship_dynamics_education": {{
+      "score": 4,
+      "analysis": "Rep missed opportunities to teach core relationship principles when prospect's story revealed them",
+      "coaching_fix": "Identify when prospect describes dynamics, then teach the principle briefly without over-educating",
+      "key_moments": ["[15:45] MISSED - Prospect said 'he yelled and I shut down' - perfect moment to explain emotion-first processing", "[22:10] MISSED - Prospect described communication breakdown - could have taught how tone sets receptivity"],
+      "missed_teaching_opportunities": [
+        {{"principle": "Emotion-first processing (wife feels before she hears)", "context": "Prospect described defensive reaction to husband's tone", "timestamp": "[15:45]"}},
+        {{"principle": "Emotional priming (tone sets receptivity)", "context": "Prospect said arguments escalate from how conversation starts", "timestamp": "[22:10]"}}
+      ]
     }}
   }},
-  "total_score": 27,
+  "total_score": 31,
   "overall_grade": "C"
 }}
 
