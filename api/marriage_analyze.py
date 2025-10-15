@@ -311,6 +311,147 @@ Be PRECISE - only mark as "won" if there's clear commitment. "I'll think about i
                 'key_closing_moments': []
             }
 
+    async def detect_discovery_quality(self, content):
+        """
+        Phase 2: Discovery Quality Tracking
+        Detects "switching gears" transition and tracks the 4 key questions.
+        """
+        prompt = f"""Analyze this marriage coaching sales call to evaluate discovery quality.
+
+TRANSCRIPT:
+{content}
+
+MARRIAGE RESET DISCOVERY FRAMEWORK:
+
+1. **TRANSITION DETECTION**: Look for the "switching gears" keyword or similar transition phrases like:
+   - "Let me switch gears"
+   - "I want to shift gears"
+   - "Let's transition to"
+   - "Now I want to move into"
+
+2. **THE 4 KEY QUESTIONS**: After switching gears, rep should ask these 4 questions:
+   a) "Do you feel like you're a priority to your husband?"
+   b) "Do you feel like your husband understands what you need?"
+   c) "Can you trust him?"
+   d) "Do you feel emotionally secure in the marriage?"
+
+3. **CONFLICT HANDLING**: Later, rep should ask:
+   - "How do you handle conflict?"
+   - "What happens when you disagree?"
+
+IMPORTANT: Provide EXACT timestamps for all findings. Mark questions as asked ONLY if clearly present.
+
+Return ONLY this JSON:
+{{
+  "switching_gears_detected": {{
+    "found": true,
+    "timestamp": "[12:45]",
+    "exact_phrase": "Let me switch gears here",
+    "transition_quality": "smooth|abrupt|missing",
+    "context": "Rep transitioned after building rapport"
+  }},
+  "four_key_questions": {{
+    "priority_question": {{
+      "asked": true,
+      "timestamp": "[13:20]",
+      "prospect_response_summary": "Said she doesn't feel like a priority",
+      "rep_follow_up": "Rep dug deeper into specific examples",
+      "emotional_intensity": 8
+    }},
+    "understanding_question": {{
+      "asked": true,
+      "timestamp": "[15:45]",
+      "prospect_response_summary": "Feels husband doesn't understand her needs",
+      "rep_follow_up": "Rep asked for clarification",
+      "emotional_intensity": 7
+    }},
+    "trust_question": {{
+      "asked": false,
+      "timestamp": null,
+      "missed_opportunity": "[16:30] Prospect mentioned broken promises - perfect moment to ask about trust",
+      "impact_of_missing": "Missed critical trust issue that affects close probability"
+    }},
+    "emotional_security_question": {{
+      "asked": true,
+      "timestamp": "[18:10]",
+      "prospect_response_summary": "Feels anxious and uncertain",
+      "rep_follow_up": "Rep validated feelings",
+      "emotional_intensity": 9
+    }}
+  }},
+  "conflict_handling": {{
+    "asked": true,
+    "timestamp": "[20:15]",
+    "prospect_response_summary": "They avoid conflict, which makes things worse",
+    "conflict_pattern_identified": "Avoidance pattern leading to resentment",
+    "rep_coaching_response": "Rep explained how avoidance compounds problems"
+  }},
+  "discovery_quality_summary": {{
+    "questions_asked_count": 3,
+    "questions_missed_count": 1,
+    "completion_percentage": 75,
+    "discovery_depth_score": 7,
+    "key_insights_uncovered": [
+      "Prospect feels deprioritized",
+      "Communication breakdown present",
+      "High emotional intensity around security"
+    ],
+    "missed_opportunities": [
+      "Trust question not asked despite broken promises mention",
+      "Could have probed deeper on priority issue"
+    ],
+    "coaching_prescription": "Practice all 4 questions until they become second nature. Trust question critical for close."
+  }}
+}}
+
+Be PRECISE with timestamps. Only mark as asked if the question is clearly present."""
+
+        try:
+            response_text = await self._call_api_with_retry(
+                prompt=prompt,
+                max_tokens=2000,
+                operation_name="Discovery Quality Detection"
+            )
+
+            # Clean and extract JSON
+            response_text = response_text.replace('```json', '').replace('```', '').strip()
+
+            import re
+            json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
+            if json_match:
+                response_text = json_match.group(0)
+
+            result = json.loads(response_text)
+
+            logger.info(f"Discovery quality: {result.get('discovery_quality_summary', {}).get('questions_asked_count', 0)}/4 key questions asked")
+            return result
+
+        except Exception as e:
+            logger.error(f"Discovery quality detection error: {str(e)}")
+            # Return safe fallback
+            return {
+                'switching_gears_detected': {
+                    'found': False,
+                    'transition_quality': 'undetermined'
+                },
+                'four_key_questions': {
+                    'priority_question': {'asked': False},
+                    'understanding_question': {'asked': False},
+                    'trust_question': {'asked': False},
+                    'emotional_security_question': {'asked': False}
+                },
+                'conflict_handling': {'asked': False},
+                'discovery_quality_summary': {
+                    'questions_asked_count': 0,
+                    'questions_missed_count': 4,
+                    'completion_percentage': 0,
+                    'discovery_depth_score': 1,
+                    'key_insights_uncovered': [],
+                    'missed_opportunities': ['Analysis failed - could not determine discovery quality'],
+                    'coaching_prescription': 'Review recording manually'
+                }
+            }
+
     async def analyze_marriage_coaching_call(self, content, filename="transcript.txt", client_name=None, closer_name=None, zoom_meeting_id=None, call_date=None):
         """Complete marriage coaching sales analysis with VTT support"""
 
@@ -333,8 +474,11 @@ Be PRECISE - only mark as "won" if there's clear commitment. "I'll think about i
             # Detect call outcome and packages first
             call_outcome = await self.detect_call_outcome(content)
 
-            # Run comprehensive analysis
-            sales_framework_analysis = await self.analyze_sales_framework(content)
+            # Phase 2: Detect discovery quality
+            discovery_quality = await self.detect_discovery_quality(content)
+
+            # Run comprehensive analysis (pass discovery quality to enhance framework scoring)
+            sales_framework_analysis = await self.analyze_sales_framework(content, discovery_quality)
             psychological_analysis = await self.analyze_psychological_profile(content)
             marriage_specific_analysis = await self.analyze_marriage_coaching_specifics(content)
             emotional_journey = await self.analyze_emotional_journey(content)
@@ -373,6 +517,9 @@ Be PRECISE - only mark as "won" if there's clear commitment. "I'll think about i
                 # Call outcome (Phase 1 feature)
                 'call_outcome': call_outcome,
 
+                # Discovery quality (Phase 2 feature)
+                'discovery_quality': discovery_quality,
+
                 # Core analyses
                 'sales_framework_analysis': sales_framework_analysis,
                 'psychological_profile': psychological_analysis,
@@ -395,10 +542,25 @@ Be PRECISE - only mark as "won" if there's clear commitment. "I'll think about i
                 'analysis_timestamp': datetime.now().isoformat()
             }
 
-    async def analyze_sales_framework(self, content):
-        """Apply the proven 6-category sales framework with temporal analysis"""
+    async def analyze_sales_framework(self, content, discovery_quality=None):
+        """Apply the proven 7-category sales framework with temporal analysis"""
 
-        prompt = f"""Analyze this marriage coaching sales call and rate performance in 6 categories using the STRICT SCORING RUBRIC below.
+        # Build discovery quality context for enhanced scoring
+        discovery_context = ""
+        if discovery_quality:
+            summary = discovery_quality.get('discovery_quality_summary', {})
+            questions_asked = summary.get('questions_asked_count', 0)
+            discovery_context = f"""
+
+DISCOVERY QUALITY DATA (Phase 2):
+- Switching gears transition: {discovery_quality.get('switching_gears_detected', {}).get('found', False)}
+- Key questions asked: {questions_asked}/4
+- Discovery completion: {summary.get('completion_percentage', 0)}%
+- Discovery depth score from Phase 2: {summary.get('discovery_depth_score', 5)}/10
+
+Use this data to inform your discovery_depth category score. If Phase 2 shows strong discovery (3-4 questions asked), score should be 7-10. If weak (0-1 questions), score should be 1-4."""
+
+        prompt = f"""Analyze this marriage coaching sales call and rate performance in 7 categories using the STRICT SCORING RUBRIC below.
 
 IMPORTANT: Transcript may include timestamps in [MM:SS] format. Use timestamps to provide PRECISE coaching feedback with exact moments to review.
 
@@ -408,6 +570,7 @@ SCORING RUBRIC (use these exact criteria for consistency):
 - 5-6: Average - Adequate but significant room for improvement
 - 3-4: Below Average - Major gaps, needs immediate coaching
 - 1-2: Poor - Critical failures, requires urgent intervention
+{discovery_context}
 
 TRANSCRIPT:
 {content}

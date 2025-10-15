@@ -608,6 +608,35 @@
                 </div>
             </div>
 
+            <!-- Discovery Quality Card (Phase 2 Feature) -->
+            <div id="discoveryQualityCard" style="display: none; background: white; border-radius: 15px; padding: 2rem; margin-bottom: 2rem; box-shadow: 0 8px 32px rgba(0,0,0,0.1);">
+                <h3 style="margin-bottom: 1rem; color: #2c3e50;">Discovery Quality</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5rem;">
+                    <div>
+                        <div style="font-size: 0.9rem; color: #666; margin-bottom: 0.5rem;">Switching Gears</div>
+                        <div id="discoveryTransition" style="font-size: 1.3rem; font-weight: 600;">-</div>
+                        <div id="discoveryTransitionTime" style="font-size: 0.9rem; color: #666; margin-top: 0.25rem;">-</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.9rem; color: #666; margin-bottom: 0.5rem;">Key Questions</div>
+                        <div id="discoveryQuestionsScore" style="font-size: 1.8rem; font-weight: bold;">-</div>
+                        <div style="font-size: 0.9rem; color: #666; margin-top: 0.25rem;">out of 4</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.9rem; color: #666; margin-bottom: 0.5rem;">Completion</div>
+                        <div id="discoveryCompletion" style="font-size: 1.8rem; font-weight: bold;">-</div>
+                    </div>
+                </div>
+                <div id="discoveryQuestionBreakdown" style="margin-top: 1.5rem; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+                    <div style="font-weight: 600; margin-bottom: 0.75rem;">4 Key Questions:</div>
+                    <div id="discoveryQuestionsList" style="display: grid; gap: 0.5rem;"></div>
+                </div>
+                <div id="discoveryCoaching" style="margin-top: 1rem; padding: 1rem; background: #fef3c7; border-radius: 8px; border-left: 4px solid #f59e0b;">
+                    <div style="font-weight: 600; margin-bottom: 0.5rem; color: #92400e;">Coaching Prescription:</div>
+                    <div id="discoveryCoachingText" style="color: #78350f;">-</div>
+                </div>
+            </div>
+
             <div class="analysis-grid">
                 <div class="metric-card">
                     <div class="metric-value" id="salesScore">-</div>
@@ -917,6 +946,93 @@
                 this.updateRecommendations(analysis.coaching_recommendations);
             }
 
+            displayDiscoveryQuality(discovery) {
+                console.log('🔍 Displaying discovery quality:', discovery);
+                const card = document.getElementById('discoveryQualityCard');
+                card.style.display = 'block';
+
+                const summary = discovery.discovery_quality_summary || {};
+                const switchingGears = discovery.switching_gears_detected || {};
+                const fourQuestions = discovery.four_key_questions || {};
+
+                // Switching gears detection
+                const transitionEl = document.getElementById('discoveryTransition');
+                if (switchingGears.found) {
+                    transitionEl.textContent = '✓ Found';
+                    transitionEl.style.color = '#16a34a'; // Green
+                    document.getElementById('discoveryTransitionTime').textContent = switchingGears.timestamp || '-';
+                } else {
+                    transitionEl.textContent = '✗ Missing';
+                    transitionEl.style.color = '#dc2626'; // Red
+                    document.getElementById('discoveryTransitionTime').textContent = 'Not detected';
+                }
+
+                // Questions score
+                const questionsAsked = summary.questions_asked_count || 0;
+                const questionsEl = document.getElementById('discoveryQuestionsScore');
+                questionsEl.textContent = questionsAsked;
+
+                if (questionsAsked >= 3) {
+                    questionsEl.style.color = '#16a34a'; // Green
+                } else if (questionsAsked === 2) {
+                    questionsEl.style.color = '#ca8a04'; // Yellow
+                } else {
+                    questionsEl.style.color = '#dc2626'; // Red
+                }
+
+                // Completion percentage
+                const completionEl = document.getElementById('discoveryCompletion');
+                const completion = summary.completion_percentage || 0;
+                completionEl.textContent = completion + '%';
+
+                if (completion >= 75) {
+                    completionEl.style.color = '#16a34a'; // Green
+                } else if (completion >= 50) {
+                    completionEl.style.color = '#ca8a04'; // Yellow
+                } else {
+                    completionEl.style.color = '#dc2626'; // Red
+                }
+
+                // Question breakdown
+                const questionsList = document.getElementById('discoveryQuestionsList');
+                questionsList.innerHTML = '';
+
+                const questions = [
+                    { key: 'priority_question', label: '1. Priority: "Do you feel like a priority?"' },
+                    { key: 'understanding_question', label: '2. Understanding: "Does he understand your needs?"' },
+                    { key: 'trust_question', label: '3. Trust: "Can you trust him?"' },
+                    { key: 'emotional_security_question', label: '4. Security: "Do you feel emotionally secure?"' }
+                ];
+
+                questions.forEach(q => {
+                    const questionData = fourQuestions[q.key] || {};
+                    const div = document.createElement('div');
+                    div.style.cssText = 'padding: 0.5rem; border-radius: 4px; display: flex; align-items: center; gap: 0.5rem;';
+
+                    if (questionData.asked) {
+                        div.style.background = '#d1fae5';
+                        div.innerHTML = `
+                            <span style="color: #16a34a; font-weight: bold;">✓</span>
+                            <span style="color: #065f46;">${q.label}</span>
+                            ${questionData.timestamp ? `<span style="color: #6b7280; font-size: 0.85rem; margin-left: auto;">${questionData.timestamp}</span>` : ''}
+                        `;
+                    } else {
+                        div.style.background = '#fee2e2';
+                        div.innerHTML = `
+                            <span style="color: #dc2626; font-weight: bold;">✗</span>
+                            <span style="color: #7f1d1d;">${q.label}</span>
+                            <span style="color: #991b1b; font-size: 0.85rem; margin-left: auto;">MISSED</span>
+                        `;
+                    }
+
+                    questionsList.appendChild(div);
+                });
+
+                // Coaching prescription
+                document.getElementById('discoveryCoachingText').textContent =
+                    summary.coaching_prescription || 'Review the 4 key questions and practice them until second nature.';
+            }
+
             displayCallOutcome(outcome) {
                 console.log('📊 Displaying call outcome:', outcome);
                 const card = document.getElementById('callOutcomeCard');
@@ -982,6 +1098,11 @@
                 // Display Call Outcome (Phase 1 Feature)
                 if (analysis.call_outcome) {
                     this.displayCallOutcome(analysis.call_outcome);
+                }
+
+                // Display Discovery Quality (Phase 2 Feature)
+                if (analysis.discovery_quality) {
+                    this.displayDiscoveryQuality(analysis.discovery_quality);
                 }
 
                 // Marriage coaching specific display
