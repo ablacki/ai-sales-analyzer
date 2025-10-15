@@ -580,6 +580,34 @@
         </div>
 
         <div class="analysis-section" id="analysisResults">
+            <!-- Call Outcome Card (Phase 1 Feature) -->
+            <div id="callOutcomeCard" style="display: none; background: white; border-radius: 15px; padding: 2rem; margin-bottom: 2rem; box-shadow: 0 8px 32px rgba(0,0,0,0.1);">
+                <h3 style="margin-bottom: 1rem; color: #2c3e50;">Call Outcome</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5rem;">
+                    <div>
+                        <div style="font-size: 0.9rem; color: #666; margin-bottom: 0.5rem;">Result</div>
+                        <div id="outcomeResult" style="font-size: 1.8rem; font-weight: bold;">-</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.9rem; color: #666; margin-bottom: 0.5rem;">Package</div>
+                        <div id="outcomePackage" style="font-size: 1.3rem; font-weight: 600;">-</div>
+                        <div id="outcomePackagePrice" style="font-size: 0.9rem; color: #666; margin-top: 0.25rem;">-</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.9rem; color: #666; margin-bottom: 0.5rem;">Packages Positioned</div>
+                        <div id="outcomePackagesPositioned" style="font-size: 1rem;">-</div>
+                    </div>
+                </div>
+                <div id="outcomeAnalysis" style="margin-top: 1.5rem; padding: 1rem; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #3b82f6;">
+                    <div style="font-weight: 600; margin-bottom: 0.5rem;">Why This Outcome:</div>
+                    <div id="outcomeWhy" style="color: #4b5563;">-</div>
+                </div>
+                <div id="outcomeKeyMoments" style="margin-top: 1rem;">
+                    <div style="font-weight: 600; margin-bottom: 0.5rem; color: #2c3e50;">Key Closing Moments:</div>
+                    <ul id="outcomeKeyMomentsList" style="list-style: none; padding: 0;"></ul>
+                </div>
+            </div>
+
             <div class="analysis-grid">
                 <div class="metric-card">
                     <div class="metric-value" id="salesScore">-</div>
@@ -889,8 +917,72 @@
                 this.updateRecommendations(analysis.coaching_recommendations);
             }
 
+            displayCallOutcome(outcome) {
+                console.log('📊 Displaying call outcome:', outcome);
+                const card = document.getElementById('callOutcomeCard');
+                card.style.display = 'block';
+
+                // Result with color coding
+                const resultEl = document.getElementById('outcomeResult');
+                const result = outcome.call_outcome?.toUpperCase() || 'UNDETERMINED';
+                resultEl.textContent = result;
+
+                if (result === 'WON') {
+                    resultEl.style.color = '#16a34a'; // Green
+                } else if (result === 'LOST') {
+                    resultEl.style.color = '#dc2626'; // Red
+                } else {
+                    resultEl.style.color = '#ca8a04'; // Yellow
+                }
+
+                // Package purchased
+                const packageEl = document.getElementById('outcomePackage');
+                const priceEl = document.getElementById('outcomePackagePrice');
+                if (outcome.package_purchased) {
+                    const pkgDetails = outcome.package_details || {};
+                    packageEl.textContent = outcome.package_purchased;
+                    priceEl.textContent = pkgDetails.price ? `$${pkgDetails.price.toLocaleString()}` : pkgDetails.description || '';
+                } else {
+                    packageEl.textContent = 'None';
+                    priceEl.textContent = result === 'LOST' ? 'No purchase' : 'Not determined';
+                }
+
+                // Packages positioned
+                const positionedEl = document.getElementById('outcomePackagesPositioned');
+                if (outcome.packages_positioned && outcome.packages_positioned.length > 0) {
+                    positionedEl.textContent = outcome.packages_positioned.join(', ');
+                } else {
+                    positionedEl.textContent = 'None detected';
+                }
+
+                // Why analysis
+                document.getElementById('outcomeWhy').textContent = outcome.why_won_or_lost || 'No analysis available';
+
+                // Key moments
+                const momentsList = document.getElementById('outcomeKeyMomentsList');
+                momentsList.innerHTML = '';
+                if (outcome.key_closing_moments && outcome.key_closing_moments.length > 0) {
+                    outcome.key_closing_moments.forEach(moment => {
+                        const li = document.createElement('li');
+                        li.style.cssText = 'padding: 0.5rem; margin: 0.25rem 0; background: #f1f5f9; border-radius: 4px; color: #334155;';
+                        li.textContent = moment;
+                        momentsList.appendChild(li);
+                    });
+                } else {
+                    const li = document.createElement('li');
+                    li.textContent = 'No key moments identified';
+                    li.style.color = '#9ca3af';
+                    momentsList.appendChild(li);
+                }
+            }
+
             displayMarriageCoachingResults(analysis) {
                 console.log('🏠 Marriage coaching display starting...');
+
+                // Display Call Outcome (Phase 1 Feature)
+                if (analysis.call_outcome) {
+                    this.displayCallOutcome(analysis.call_outcome);
+                }
 
                 // Marriage coaching specific display
                 const framework = analysis.sales_framework_analysis?.framework_scores;

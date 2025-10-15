@@ -133,6 +133,14 @@ class MarriageCoachingAnalyzer:
         self.max_retries = max_retries
         self.timeout = timeout
 
+        # Marriage Reset package definitions
+        self.packages = {
+            'MRL': {'name': 'Marriage Reset Light', 'price': 2300, 'description': 'Self-paced course'},
+            'MRS': {'name': 'Marriage Reset Standard', 'price': None, 'description': 'Course + 2 coaching calls + weekly group'},
+            'MRP': {'name': 'Marriage Reset Plus', 'price': None, 'description': 'Course + 5 coaching sessions + weekly group'},
+            'MRI': {'name': 'Marriage Reset Intensive', 'price': 11800, 'description': 'Course + 16 coaching sessions + weekly group'}
+        }
+
     async def _call_api_with_retry(self, prompt, max_tokens, operation_name="API call"):
         """
         Make API call with exponential backoff retry logic
@@ -211,6 +219,98 @@ class MarriageCoachingAnalyzer:
         # If we get here, all retries failed
         raise Exception(f"{operation_name} failed after {self.max_retries} attempts: {str(last_error)}")
 
+    async def detect_call_outcome(self, content):
+        """
+        Detect if call was won/lost and identify which package was discussed/purchased.
+        Specific to Marriage Reset methodology with early price positioning.
+        """
+        prompt = f"""Analyze this marriage coaching sales call to determine the outcome and packages discussed.
+
+TRANSCRIPT:
+{content}
+
+PACKAGE INFORMATION:
+- MRL (Marriage Reset Light): $2,300 self-paced course
+- MRS (Marriage Reset Standard): Course + 2 coaching calls + weekly group
+- MRP (Marriage Reset Plus): Course + 5 coaching sessions + weekly group
+- MRI (Marriage Reset Intensive): $11,800 - Course + 16 coaching sessions + weekly group
+
+IMPORTANT: Look for explicit purchase signals like:
+- "I want to get started"
+- "Let's do it" / "I'm in"
+- "How do I sign up" / "What's the next step"
+- "I'll do the [package name]"
+- Discussion of payment plans, credit cards, signing up
+- Scheduling first coaching call
+- Rep saying "welcome to the program" or similar
+
+CALL WON = Clear commitment to purchase (even if paying later)
+CALL LOST = No commitment, "I need to think about it", "talk to my wife", objections not overcome
+
+Return ONLY this JSON:
+{{
+  "call_outcome": "won" or "lost" or "undetermined",
+  "confidence": 0.85,
+  "packages_positioned": ["MRL", "MRI"],
+  "package_purchased": "MRI" or null,
+  "purchase_timestamp": "[35:20]" or null,
+  "closing_moment_analysis": {{
+    "decision_point_timestamp": "[35:20]",
+    "prospect_buying_signals": ["Said 'I need this'", "Asked about payment"],
+    "rep_closing_approach": "Assumptive close after addressing wife objection",
+    "objections_raised": ["Need to talk to wife", "Concerned about cost"],
+    "objections_handled": true,
+    "final_commitment_language": "Prospect said 'let's do the intensive'"
+  }},
+  "why_won_or_lost": "Clear analysis of what led to outcome",
+  "key_closing_moments": [
+    "[33:15] Prospect showed strong buying signal - 'this makes so much sense'",
+    "[35:20] Rep handled wife objection perfectly",
+    "[36:45] Prospect committed to MRI package"
+  ]
+}}
+
+Be PRECISE - only mark as "won" if there's clear commitment. "I'll think about it" = lost."""
+
+        try:
+            response_text = await self._call_api_with_retry(
+                prompt=prompt,
+                max_tokens=1500,
+                operation_name="Call Outcome Detection"
+            )
+
+            # Clean and extract JSON
+            response_text = response_text.replace('```json', '').replace('```', '').strip()
+
+            import re
+            json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
+            if json_match:
+                response_text = json_match.group(0)
+
+            result = json.loads(response_text)
+
+            # Add package details
+            if result.get('package_purchased'):
+                package_code = result['package_purchased']
+                if package_code in self.packages:
+                    result['package_details'] = self.packages[package_code]
+
+            logger.info(f"Call outcome: {result.get('call_outcome')} - Package: {result.get('package_purchased')}")
+            return result
+
+        except Exception as e:
+            logger.error(f"Call outcome detection error: {str(e)}")
+            # Return safe fallback
+            return {
+                'call_outcome': 'undetermined',
+                'confidence': 0.0,
+                'packages_positioned': [],
+                'package_purchased': None,
+                'purchase_timestamp': None,
+                'why_won_or_lost': 'Analysis failed - could not determine outcome',
+                'key_closing_moments': []
+            }
+
     async def analyze_marriage_coaching_call(self, content, filename="transcript.txt", client_name=None, closer_name=None, zoom_meeting_id=None, call_date=None):
         """Complete marriage coaching sales analysis with VTT support"""
 
@@ -229,6 +329,9 @@ class MarriageCoachingAnalyzer:
             if len(content) > 100000:
                 logger.warning(f"Content very long ({len(content)} chars), truncating to 100k")
                 content = content[:100000] + "\n\n... [Content truncated for analysis - call exceeded 100k characters]"
+
+            # Detect call outcome and packages first
+            call_outcome = await self.detect_call_outcome(content)
 
             # Run comprehensive analysis
             sales_framework_analysis = await self.analyze_sales_framework(content)
@@ -266,6 +369,9 @@ class MarriageCoachingAnalyzer:
                     'call_date': call_date or datetime.now().strftime('%Y-%m-%d'),
                     'analysis_timestamp': datetime.now().isoformat()
                 },
+
+                # Call outcome (Phase 1 feature)
+                'call_outcome': call_outcome,
 
                 # Core analyses
                 'sales_framework_analysis': sales_framework_analysis,
