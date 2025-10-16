@@ -471,18 +471,22 @@ Be PRECISE with timestamps. Only mark as asked if the question is clearly presen
                 logger.warning(f"Content very long ({len(content)} chars), truncating to 100k")
                 content = content[:100000] + "\n\n... [Content truncated for analysis - call exceeded 100k characters]"
 
-            # Detect call outcome and packages first
-            call_outcome = await self.detect_call_outcome(content)
+            # Run Phase 1 & 2 analyses in parallel (they don't depend on each other)
+            call_outcome, discovery_quality, psychological_analysis, emotional_journey, archetype_classification = await asyncio.gather(
+                self.detect_call_outcome(content),
+                self.detect_discovery_quality(content),
+                self.analyze_psychological_profile(content),
+                self.analyze_emotional_journey(content),
+                self.classify_marriage_archetype(content)
+            )
 
-            # Phase 2: Detect discovery quality
-            discovery_quality = await self.detect_discovery_quality(content)
+            # Run analyses that depend on Phase 2 data
+            sales_framework_analysis, marriage_specific_analysis = await asyncio.gather(
+                self.analyze_sales_framework(content, discovery_quality),
+                self.analyze_marriage_coaching_specifics(content)
+            )
 
-            # Run comprehensive analysis (pass discovery quality to enhance framework scoring)
-            sales_framework_analysis = await self.analyze_sales_framework(content, discovery_quality)
-            psychological_analysis = await self.analyze_psychological_profile(content)
-            marriage_specific_analysis = await self.analyze_marriage_coaching_specifics(content)
-            emotional_journey = await self.analyze_emotional_journey(content)
-            archetype_classification = await self.classify_marriage_archetype(content)
+            # Run talk track improvements (depends on framework and marriage analysis)
             talk_track_improvements = await self.analyze_talk_track_improvements(content, sales_framework_analysis, marriage_specific_analysis)
 
             # Calculate success probability
