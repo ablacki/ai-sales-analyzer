@@ -1,4 +1,12 @@
 {
+  "functions": {
+    "api/marriage_analyze.py": {
+      "maxDuration": 60
+    },
+    "api/analyze.py": {
+      "maxDuration": 60
+    }
+  },
   "builds": [
     {
       "src": "api/analyze.py",
