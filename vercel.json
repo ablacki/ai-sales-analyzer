@@ -23,7 +23,7 @@
       "dest": "/api/analyze.py"
     },
     {
-      "src": "/api/marriage-analyze",
+      "src": "/api/marriage_analyze",
       "dest": "/api/marriage_analyze.py"
     },
     {
