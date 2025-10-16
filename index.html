@@ -803,7 +803,7 @@
             async performRealAnalysis(content, filename) {
                 // Check if marriage coaching analysis is selected
                 const useMarriageAnalysis = document.getElementById('marriageCoachingMode')?.checked || false;
-                const endpoint = useMarriageAnalysis ? '/api/marriage-analyze' : '/api/analyze';
+                const endpoint = useMarriageAnalysis ? '/api/marriage_analyze' : '/api/analyze';
 
                 // Call the real Vercel API endpoint
                 console.log('Starting real AI analysis...');
