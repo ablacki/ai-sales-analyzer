@@ -580,6 +580,22 @@
         </div>
 
         <div class="analysis-section" id="analysisResults">
+            <!-- Call Header with Rep/Client Names -->
+            <div id="callHeaderCard" style="display: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 15px; padding: 1.5rem 2rem; margin-bottom: 2rem; box-shadow: 0 8px 32px rgba(0,0,0,0.15); color: white;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="font-size: 0.85rem; opacity: 0.9; margin-bottom: 0.25rem;">Sales Representative</div>
+                        <div id="repName" style="font-size: 1.5rem; font-weight: bold;">-</div>
+                    </div>
+                    <div style="font-size: 2rem; opacity: 0.6;">→</div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 0.85rem; opacity: 0.9; margin-bottom: 0.25rem;">Client</div>
+                        <div id="clientName" style="font-size: 1.5rem; font-weight: bold;">-</div>
+                    </div>
+                </div>
+                <div id="callDate" style="margin-top: 1rem; font-size: 0.85rem; opacity: 0.8; text-align: center;">-</div>
+            </div>
+
             <!-- Call Outcome Card (Phase 1 Feature) -->
             <div id="callOutcomeCard" style="display: none; background: white; border-radius: 15px; padding: 2rem; margin-bottom: 2rem; box-shadow: 0 8px 32px rgba(0,0,0,0.1);">
                 <h3 style="margin-bottom: 1rem; color: #2c3e50;">Call Outcome</h3>
@@ -1092,8 +1108,31 @@
                 }
             }
 
+            displayCallHeader(metadata) {
+                console.log('👤 Displaying call header with names:', metadata);
+                const card = document.getElementById('callHeaderCard');
+                card.style.display = 'block';
+
+                // Display rep/closer name
+                const repName = metadata.closer_name || 'Unknown Rep';
+                document.getElementById('repName').textContent = repName;
+
+                // Display client name
+                const clientName = metadata.client_name || 'Unknown Client';
+                document.getElementById('clientName').textContent = clientName;
+
+                // Display call date
+                const callDate = metadata.call_date || metadata.analysis_timestamp?.split('T')[0] || 'Date not available';
+                document.getElementById('callDate').textContent = `Call Date: ${callDate}`;
+            }
+
             displayMarriageCoachingResults(analysis) {
                 console.log('🏠 Marriage coaching display starting...');
+
+                // Display Call Header with Rep/Client Names
+                if (analysis.call_metadata) {
+                    this.displayCallHeader(analysis.call_metadata);
+                }
 
                 // Display Call Outcome (Phase 1 Feature)
                 if (analysis.call_outcome) {
@@ -1218,11 +1257,29 @@
                     const score = categoryData?.score || 5;
                     const analysis = categoryData?.analysis || 'Analysis not available';
                     const coachingFix = categoryData?.coaching_fix || 'No specific coaching recommendation';
+                    const keyMoments = categoryData?.key_moments || [];
 
                     // Color coding
                     let colorClass = 'score-red';
                     if (score >= 8) colorClass = 'score-green';
                     else if (score >= 6) colorClass = 'score-yellow';
+
+                    // Build key moments list if available
+                    let keyMomentsHTML = '';
+                    if (keyMoments && keyMoments.length > 0) {
+                        keyMomentsHTML = `
+                            <div class="framework-moments" style="margin-top: 0.75rem; padding: 0.75rem; background: #f8fafc; border-radius: 6px; border-left: 3px solid #3b82f6;">
+                                <strong style="color: #1e40af; font-size: 0.9rem;">📍 Key Moments to Review:</strong>
+                                <ul style="margin: 0.5rem 0 0 0; padding-left: 1.25rem; list-style: none;">
+                                    ${keyMoments.map(moment => `
+                                        <li style="margin: 0.25rem 0; color: #475569; font-size: 0.9rem; line-height: 1.5;">
+                                            ${moment}
+                                        </li>
+                                    `).join('')}
+                                </ul>
+                            </div>
+                        `;
+                    }
 
                     frameworkHTML += `
                         <div class="framework-item">
@@ -1236,6 +1293,7 @@
                             </div>
                             <div class="framework-analysis">${analysis}</div>
                             <div class="framework-coaching"><strong>Coaching:</strong> ${coachingFix}</div>
+                            ${keyMomentsHTML}
                         </div>
                     `;
                 });
